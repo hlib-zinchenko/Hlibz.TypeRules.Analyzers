@@ -102,7 +102,8 @@ public sealed class RestrictAccessibilityCodeFixProvider : CodeFixProvider
 
             bool isLegal = container is null
                 ? candidate is AccessScope.Public or AccessScope.Internal
-                : !IsProtectedLevel(candidate) || AllowsNewProtectedMembers(container);
+                : !Accessibilities.IsProtectedLevel(candidate)
+                    || Accessibilities.AllowsNewProtectedMembers(container);
 
             if (isLegal)
             {
@@ -111,22 +112,6 @@ public sealed class RestrictAccessibilityCodeFixProvider : CodeFixProvider
         }
 
         return null;
-    }
-
-    private static bool IsProtectedLevel(AccessScope scope)
-    {
-        return scope is AccessScope.Protected
-            or AccessScope.ProtectedInternal
-            or AccessScope.PrivateProtected;
-    }
-
-    /// <summary>
-    /// Structs, static classes and interfaces can't declare protected members, and a new
-    /// protected member in a sealed class is a warning (CS0628).
-    /// </summary>
-    private static bool AllowsNewProtectedMembers(INamedTypeSymbol container)
-    {
-        return container.TypeKind == TypeKind.Class && !container.IsStatic && !container.IsSealed;
     }
 
     private static async Task<Solution> SetAccessibilityAsync(

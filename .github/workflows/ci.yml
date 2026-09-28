@@ -37,7 +37,7 @@ jobs:
         run: dotnet test --project tests/Hlibz.TypeRules.Analyzers.Tests --no-build --configuration Release
 
       # The sample loads the analyzer from a real .editorconfig. It built clean above; with its
-      # violations compiled in, it must fail with TR001, TR002 and TR003.
+      # violations compiled in, it must fail with TR001 through TR005.
       - name: Sample reports violations
         run: |
           set +e
@@ -53,6 +53,8 @@ jobs:
           grep -q "error TR001" violations.log
           grep -q "error TR002" violations.log
           grep -q "error TR003" violations.log
+          grep -q "error TR004" violations.log
+          grep -q "error TR005" violations.log
 
       - name: Pack
         run: dotnet pack src/Hlibz.TypeRules.Analyzers.Package --no-build --configuration Release --output ./artifacts

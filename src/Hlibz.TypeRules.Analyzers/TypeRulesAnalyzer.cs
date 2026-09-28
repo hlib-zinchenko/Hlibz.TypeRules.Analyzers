@@ -11,7 +11,7 @@ namespace Hlibz.TypeRules.Analyzers;
 
 /// <summary>
 /// Checks every class and struct against the rule sets configured for the file it's declared in
-/// (TR001-TR003), and reports configuration it couldn't apply (TR000).
+/// (TR001-TR005), and reports configuration it couldn't apply (TR000).
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
@@ -28,7 +28,9 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
             Descriptors.InvalidConfiguration,
             Descriptors.AccessibilityExceedsMaximum,
             Descriptors.TypeMustBeSealed,
-            Descriptors.CompanionInterfaceMissing);
+            Descriptors.CompanionInterfaceMissing,
+            Descriptors.SetterExceedsMaximum,
+            Descriptors.MutableCollectionExposed);
 
     /// <inheritdoc />
     public override void Initialize(AnalysisContext context)
@@ -98,6 +100,7 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
             AnalyzeAccessibility(context, type, matching);
             AnalyzeSealed(context, type, matching);
             CompanionInterfaces.Analyze(context, type, matching);
+            MemberRules.Analyze(context, type, matching);
         }
 
         private void ReportConfigurationErrors(

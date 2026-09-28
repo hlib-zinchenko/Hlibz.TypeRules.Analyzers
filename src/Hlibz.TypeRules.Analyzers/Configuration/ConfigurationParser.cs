@@ -18,6 +18,9 @@ internal static class ConfigurationParser
     public const string MaxAccessibilityOption = "max_accessibility";
     public const string RequireSealedOption = "require_sealed";
     public const string CompanionInterfaceOption = "companion_interface";
+    public const string MaxSetterAccessibilityOption = "max_setter_accessibility";
+    public const string AllowInitOption = "allow_init";
+    public const string ReadOnlyCollectionsOption = "readonly_collections";
 
     private static readonly string[] KnownOptions =
     [
@@ -25,6 +28,9 @@ internal static class ConfigurationParser
         MaxAccessibilityOption,
         RequireSealedOption,
         CompanionInterfaceOption,
+        MaxSetterAccessibilityOption,
+        AllowInitOption,
+        ReadOnlyCollectionsOption,
     ];
 
     /// <summary>Options that each add a check; a rule set needs at least one of them.</summary>
@@ -33,6 +39,8 @@ internal static class ConfigurationParser
         MaxAccessibilityOption,
         RequireSealedOption,
         CompanionInterfaceOption,
+        MaxSetterAccessibilityOption,
+        ReadOnlyCollectionsOption,
     ];
 
     private static readonly char[] MatchSeparators = ['|', ','];
@@ -114,17 +122,19 @@ internal static class ConfigurationParser
             }
         }
 
-        AccessScope? maxAccessibility = null;
-        if (values.TryGetValue(MaxAccessibilityOption, out string? maxAccessibilityValue))
+        AccessScope? maxAccessibility =
+            ParseAccessibility(name, MaxAccessibilityOption, values, errors);
+        AccessScope? maxSetterAccessibility =
+            ParseAccessibility(name, MaxSetterAccessibilityOption, values, errors);
+        bool allowInit = ParseBoolean(name, AllowInitOption, values, errors);
+        bool readOnlyCollections = ParseBoolean(name, ReadOnlyCollectionsOption, values, errors);
+
+        if (values.ContainsKey(AllowInitOption)
+            && !values.ContainsKey(MaxSetterAccessibilityOption))
         {
-            maxAccessibility = AccessScopes.Parse(maxAccessibilityValue);
-            if (maxAccessibility is null)
-            {
-                errors.Add(
-                    $"rule set '{name}' has an invalid max_accessibility '{maxAccessibilityValue}' "
-                    + "(expected public, protected_internal, internal, protected, "
-                    + "private_protected or private)");
-            }
+            errors.Add(
+                $"rule set '{name}' sets allow_init without max_setter_accessibility, which it "
+                + "modifies");
         }
 
         bool requireSealed = ParseBoolean(name, RequireSealedOption, values, errors);
@@ -176,7 +186,32 @@ internal static class ConfigurationParser
             matchedTypes,
             maxAccessibility,
             requireSealed,
-            requireCompanionInterface);
+            requireCompanionInterface,
+            maxSetterAccessibility,
+            allowInit,
+            readOnlyCollections);
+    }
+
+    private static AccessScope? ParseAccessibility(
+        string ruleSetName,
+        string option,
+        Dictionary<string, string> values,
+        ImmutableArray<string>.Builder errors)
+    {
+        if (!values.TryGetValue(option, out string? value))
+        {
+            return null;
+        }
+
+        AccessScope? scope = AccessScopes.Parse(value);
+        if (scope is null)
+        {
+            errors.Add(
+                $"rule set '{ruleSetName}' has an invalid {option} '{value}' (expected public, "
+                + "protected_internal, internal, protected, private_protected or private)");
+        }
+
+        return scope;
     }
 
     private static bool ParseBoolean(

@@ -13,6 +13,12 @@ internal class Order : Entity<int>
         : base(id)
     {
     }
+
+    // TR004: a public setter on an entity.
+    public string Status { get; set; } = "New";
+
+    // TR005: a mutable collection exposed by an entity.
+    public List<int> Lines { get; } = [];
 }
 
 // TR003: a handler with no IListOrdersHandler companion interface.

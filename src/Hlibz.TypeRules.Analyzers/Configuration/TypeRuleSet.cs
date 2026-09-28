@@ -15,13 +15,19 @@ internal sealed class TypeRuleSet
         ImmutableArray<INamedTypeSymbol> matchedTypes,
         AccessScope? maxAccessibility,
         bool requireSealed,
-        bool requireCompanionInterface)
+        bool requireCompanionInterface,
+        AccessScope? maxSetterAccessibility,
+        bool allowInit,
+        bool readOnlyCollections)
     {
         Name = name;
         MatchedTypes = matchedTypes;
         MaxAccessibility = maxAccessibility;
         RequireSealed = requireSealed;
         RequireCompanionInterface = requireCompanionInterface;
+        MaxSetterAccessibility = maxSetterAccessibility;
+        AllowInit = allowInit;
+        ReadOnlyCollections = readOnlyCollections;
     }
 
     public string Name { get; }
@@ -34,6 +40,15 @@ internal sealed class TypeRuleSet
     public bool RequireSealed { get; }
 
     public bool RequireCompanionInterface { get; }
+
+    public AccessScope? MaxSetterAccessibility { get; }
+
+    /// <summary>
+    /// Whether <c>init</c> accessors are exempt from <see cref="MaxSetterAccessibility"/>.
+    /// </summary>
+    public bool AllowInit { get; }
+
+    public bool ReadOnlyCollections { get; }
 
     /// <summary>
     /// Whether <paramref name="type"/> inherits from or implements any matched type, directly or

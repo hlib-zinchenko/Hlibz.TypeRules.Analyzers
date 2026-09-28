@@ -65,7 +65,8 @@ needs `--project <path>` rather than a bare directory argument.
   maximum that's legal where the type is declared (no protected levels inside structs, static or
   sealed classes); the TR002 fix isn't offered when anything derives from the type or it declares
   new virtual/protected members; the TR003 fix only acts when the companion is missing or
-  exists and is valid. Tests cover each "no fix offered" case.
+  exists and is valid; the TR004 fix skips required, interface-implementing, virtual and
+  getter-less properties; the TR005 fix only registers when the change still compiles. Tests cover each "no fix offered" case.
 - **`CompanionInterfaces`** (TR003) holds the companion lookup (`I` + name, same arity, same
   namespace or containing type) shared by the analyzer and `CompanionInterfaceCodeFixProvider`,
   and passes the fix its state (`Missing`/`NotImplemented`; absent = no safe fix) and the matched
@@ -75,7 +76,18 @@ needs `--project <path>` rather than a bare directory argument.
   drops added documents, so it re-resolves each type by documentation ID and applies the fixes
   one after another. Roslyn 4.8 has `ImportAdder.AddImportsAsync` with
   `Simplifier.AddImportsAnnotation`, not the newer `AddImportsFromSymbolAnnotationAsync`.
-- **Rule IDs `TR000`–`TR003` are public contract.** Never renumber or reuse one. Descriptors live
+- **`MemberRules`** (TR004, TR005) checks the properties and fields a matched type declares,
+  skipping overrides and explicit interface implementations. Generated partial parts need no
+  check of their own: with `GeneratedCodeAnalysisFlags.None`, the analyzer driver drops
+  diagnostics located in generated code (a test pins this). `MutableCollections` is TR005's
+  explicit list of mutable types (not "implements ICollection<T>": immutable collections do too)
+  and their read-only equivalents, shared with the fix.
+- **The TR005 fix compiles speculatively.** Changing a member's type can break callers, so
+  `ExposeReadOnlyCollectionCodeFixProvider` applies the change and compares error counts in every
+  document referencing the member (`SymbolFinder.FindReferencesAsync`) before registering.
+- Code-fix helpers shared across fixes: `Accessibilities` (where protected levels are legal) and
+  `DocumentCleanup` (imports, simplification, formatting, line-ending normalization).
+- **Rule IDs `TR000`–`TR005` are public contract.** Never renumber or reuse one. Descriptors live
   in `Descriptors.cs`, with help links to `docs/rules/<ID>.md`.
 
 ## Tests

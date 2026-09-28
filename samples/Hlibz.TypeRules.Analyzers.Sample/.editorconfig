@@ -12,3 +12,5 @@ typerules.handlers.companion_interface = true
 
 typerules.entities.match = T:Sample.Entity`1
 typerules.entities.require_sealed = true
+typerules.entities.max_setter_accessibility = private
+typerules.entities.readonly_collections = true
