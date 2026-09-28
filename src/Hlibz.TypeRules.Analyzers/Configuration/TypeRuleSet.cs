@@ -18,7 +18,8 @@ internal sealed class TypeRuleSet
         bool requireCompanionInterface,
         AccessScope? maxSetterAccessibility,
         bool allowInit,
-        bool readOnlyCollections)
+        bool readOnlyCollections,
+        ImmutableArray<NamespacePattern> namespacePatterns)
     {
         Name = name;
         MatchedTypes = matchedTypes;
@@ -28,6 +29,7 @@ internal sealed class TypeRuleSet
         MaxSetterAccessibility = maxSetterAccessibility;
         AllowInit = allowInit;
         ReadOnlyCollections = readOnlyCollections;
+        NamespacePatterns = namespacePatterns;
     }
 
     public string Name { get; }
@@ -49,6 +51,11 @@ internal sealed class TypeRuleSet
     public bool AllowInit { get; }
 
     public bool ReadOnlyCollections { get; }
+
+    /// <summary>
+    /// Alternatives: a matched type's namespace must match at least one. Empty = any namespace.
+    /// </summary>
+    public ImmutableArray<NamespacePattern> NamespacePatterns { get; }
 
     /// <summary>
     /// Whether <paramref name="type"/> inherits from or implements any matched type, directly or

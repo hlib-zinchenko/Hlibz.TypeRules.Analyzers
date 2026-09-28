@@ -13,6 +13,7 @@ internal static class Descriptors
     public const string CompanionInterfaceMissingId = "TR003";
     public const string SetterExceedsMaximumId = "TR004";
     public const string MutableCollectionExposedId = "TR005";
+    public const string WrongNamespaceId = "TR006";
 
     public static readonly DiagnosticDescriptor InvalidConfiguration = new(
         InvalidConfigurationId,
@@ -88,6 +89,19 @@ internal static class Descriptors
             + "readonly_collections = true. Expose IReadOnlyList<T>, IReadOnlyCollection<T> or "
             + "IReadOnlyDictionary<TKey, TValue> over a private collection instead.",
         helpLinkUri: HelpLink(MutableCollectionExposedId));
+
+    public static readonly DiagnosticDescriptor WrongNamespace = new(
+        WrongNamespaceId,
+        title: "Type is declared in the wrong namespace",
+        messageFormat: "'{0}' is declared in {1}, but rule set '{2}' requires a namespace "
+            + "matching {3}",
+        category: "Design",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Types that inherit from or implement a rule set's matched types must be "
+            + "declared in a namespace matching one of the rule set's namespace_pattern "
+            + "alternatives.",
+        helpLinkUri: HelpLink(WrongNamespaceId));
 
     private static string HelpLink(string id)
     {

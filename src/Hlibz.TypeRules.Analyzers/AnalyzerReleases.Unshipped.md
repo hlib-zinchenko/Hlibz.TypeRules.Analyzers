@@ -11,3 +11,4 @@ TR002 | Design | Warning | TypeRulesAnalyzer
 TR003 | Design | Warning | TypeRulesAnalyzer
 TR004 | Design | Warning | TypeRulesAnalyzer
 TR005 | Design | Warning | TypeRulesAnalyzer
+TR006 | Design | Warning | TypeRulesAnalyzer

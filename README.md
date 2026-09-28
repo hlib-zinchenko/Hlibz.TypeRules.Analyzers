@@ -40,6 +40,7 @@ typerules.handlers.match = T:MyApp.Application.IRequestHandler`2
 typerules.handlers.max_accessibility = internal
 typerules.handlers.require_sealed = true
 typerules.handlers.companion_interface = true
+typerules.handlers.namespace_pattern = **.Handlers
 
 # Entities: state changes only through their own methods.
 typerules.entities.match = T:MyApp.Domain.Entity`1
@@ -60,6 +61,7 @@ nothing.
 | [TR003](docs/rules/TR003.md) | Type must implement its companion interface (`Foo` → `IFoo`) | Generate `IFoo`, or implement it |
 | [TR004](docs/rules/TR004.md) | Setter is more accessible than its rule set allows | Restrict the accessor |
 | [TR005](docs/rules/TR005.md) | Mutable collection (`List<T>`, arrays, ...) is exposed | Expose the read-only interface, when that still compiles |
+| [TR006](docs/rules/TR006.md) | Type is declared in the wrong namespace | — (use the IDE's *Move to namespace*) |
 
 All rules are warnings by default. With `TreatWarningsAsErrors`, they fail the build. Change a
 rule's severity the usual way:
@@ -82,6 +84,7 @@ to choose: letters, digits, `_` and `-`.
 | `max_setter_accessibility` | Same values as `max_accessibility` | TR004: `set` and `init` accessors of properties the matched types declare can't be more accessible than this |
 | `allow_init` | `true` or `false` | TR004: exempt `init` accessors. Only valid with `max_setter_accessibility` |
 | `readonly_collections` | `true` or `false` | TR005: properties and fields visible outside the matched types can't have a mutable collection type |
+| `namespace_pattern` | Dot-separated names; `*` is one segment, `**` any number; alternatives separated by `\|` | TR006: matched types must be declared in a namespace matching one alternative, e.g. `**.Database.Configurations` |
 
 A rule set needs `match` and at least one of the other options.
 
@@ -153,7 +156,6 @@ dotnet_code_quality.CA1710.additional_required_suffixes = T:MyApp.Api.IEndpoint-
 
 ## Roadmap
 
-- **TR006** Matched types must live under a given namespace.
 - **TR007** Matched types must not hold references to another rule set's types, e.g. an aggregate
   root holding another aggregate root instead of its id.
 

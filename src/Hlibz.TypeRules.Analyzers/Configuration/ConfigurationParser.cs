@@ -21,6 +21,7 @@ internal static class ConfigurationParser
     public const string MaxSetterAccessibilityOption = "max_setter_accessibility";
     public const string AllowInitOption = "allow_init";
     public const string ReadOnlyCollectionsOption = "readonly_collections";
+    public const string NamespacePatternOption = "namespace_pattern";
 
     private static readonly string[] KnownOptions =
     [
@@ -31,6 +32,7 @@ internal static class ConfigurationParser
         MaxSetterAccessibilityOption,
         AllowInitOption,
         ReadOnlyCollectionsOption,
+        NamespacePatternOption,
     ];
 
     /// <summary>Options that each add a check; a rule set needs at least one of them.</summary>
@@ -41,6 +43,7 @@ internal static class ConfigurationParser
         CompanionInterfaceOption,
         MaxSetterAccessibilityOption,
         ReadOnlyCollectionsOption,
+        NamespacePatternOption,
     ];
 
     private static readonly char[] MatchSeparators = ['|', ','];
@@ -128,6 +131,8 @@ internal static class ConfigurationParser
             ParseAccessibility(name, MaxSetterAccessibilityOption, values, errors);
         bool allowInit = ParseBoolean(name, AllowInitOption, values, errors);
         bool readOnlyCollections = ParseBoolean(name, ReadOnlyCollectionsOption, values, errors);
+        ImmutableArray<NamespacePattern> namespacePatterns =
+            ParseNamespacePatterns(name, values, errors);
 
         if (values.ContainsKey(AllowInitOption)
             && !values.ContainsKey(MaxSetterAccessibilityOption))
@@ -189,7 +194,39 @@ internal static class ConfigurationParser
             requireCompanionInterface,
             maxSetterAccessibility,
             allowInit,
-            readOnlyCollections);
+            readOnlyCollections,
+            namespacePatterns);
+    }
+
+    private static ImmutableArray<NamespacePattern> ParseNamespacePatterns(
+        string ruleSetName,
+        Dictionary<string, string> values,
+        ImmutableArray<string>.Builder errors)
+    {
+        if (!values.TryGetValue(NamespacePatternOption, out string? value))
+        {
+            return ImmutableArray<NamespacePattern>.Empty;
+        }
+
+        ImmutableArray<NamespacePattern>.Builder patterns =
+            ImmutableArray.CreateBuilder<NamespacePattern>();
+
+        foreach (string alternative in value.Split(MatchSeparators))
+        {
+            NamespacePattern? pattern = NamespacePattern.Parse(alternative);
+            if (pattern is null)
+            {
+                errors.Add(
+                    $"rule set '{ruleSetName}' has an invalid namespace_pattern '{value}' "
+                    + "(expected dot-separated names, with '*' for one segment and '**' for any "
+                    + "number, alternatives separated by '|')");
+                return ImmutableArray<NamespacePattern>.Empty;
+            }
+
+            patterns.Add(pattern);
+        }
+
+        return patterns.ToImmutable();
     }
 
     private static AccessScope? ParseAccessibility(

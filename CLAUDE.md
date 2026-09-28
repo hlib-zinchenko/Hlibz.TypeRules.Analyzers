@@ -87,7 +87,12 @@ needs `--project <path>` rather than a bare directory argument.
   document referencing the member (`SymbolFinder.FindReferencesAsync`) before registering.
 - Code-fix helpers shared across fixes: `Accessibilities` (where protected levels are legal) and
   `DocumentCleanup` (imports, simplification, formatting, line-ending normalization).
-- **Rule IDs `TR000`–`TR005` are public contract.** Never renumber or reuse one. Descriptors live
+- **`Configuration/NamespacePattern`** (TR006) matches namespaces segment by segment: `*` is one
+  segment, `**` any number including none (so `**` alone matches the global namespace). TR006
+  reports once per violated rule set, since namespace requirements can't be combined the way
+  accessibility maximums are, and has no code fix: moving a type means moving callers and the
+  file, which the IDE's own refactoring does.
+- **Rule IDs `TR000`–`TR006` are public contract.** Never renumber or reuse one. Descriptors live
   in `Descriptors.cs`, with help links to `docs/rules/<ID>.md`.
 
 ## Tests

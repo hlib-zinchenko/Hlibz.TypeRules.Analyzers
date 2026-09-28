@@ -11,7 +11,7 @@ namespace Hlibz.TypeRules.Analyzers;
 
 /// <summary>
 /// Checks every class and struct against the rule sets configured for the file it's declared in
-/// (TR001-TR005), and reports configuration it couldn't apply (TR000).
+/// (TR001-TR006), and reports configuration it couldn't apply (TR000).
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
@@ -30,7 +30,8 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
             Descriptors.TypeMustBeSealed,
             Descriptors.CompanionInterfaceMissing,
             Descriptors.SetterExceedsMaximum,
-            Descriptors.MutableCollectionExposed);
+            Descriptors.MutableCollectionExposed,
+            Descriptors.WrongNamespace);
 
     /// <inheritdoc />
     public override void Initialize(AnalysisContext context)
@@ -101,6 +102,7 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
             AnalyzeSealed(context, type, matching);
             CompanionInterfaces.Analyze(context, type, matching);
             MemberRules.Analyze(context, type, matching);
+            AnalyzeNamespace(context, type, matching);
         }
 
         private void ReportConfigurationErrors(
@@ -191,6 +193,43 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                 type.Locations.Skip(1),
                 type.Name,
                 FormatRuleSetNames(requiring)));
+        }
+
+        /// <summary>
+        /// One diagnostic per violated rule set: unlike accessibility maximums, two rule sets'
+        /// namespace requirements can't be combined into one.
+        /// </summary>
+        private static void AnalyzeNamespace(
+            SymbolAnalysisContext context,
+            INamedTypeSymbol type,
+            List<TypeRuleSet> matching)
+        {
+            INamespaceSymbol containingNamespace = type.ContainingNamespace;
+            string namespaceName = containingNamespace.IsGlobalNamespace
+                ? string.Empty
+                : containingNamespace.ToDisplayString();
+
+            foreach (TypeRuleSet ruleSet in matching)
+            {
+                if (ruleSet.NamespacePatterns.IsEmpty
+                    || ruleSet.NamespacePatterns.Any(pattern => pattern.Matches(namespaceName)))
+                {
+                    continue;
+                }
+
+                context.ReportDiagnostic(Diagnostic.Create(
+                    Descriptors.WrongNamespace,
+                    type.Locations[0],
+                    type.Locations.Skip(1),
+                    type.Name,
+                    namespaceName.Length == 0
+                        ? "the global namespace"
+                        : $"namespace '{namespaceName}'",
+                    ruleSet.Name,
+                    string.Join(
+                        " or ",
+                        ruleSet.NamespacePatterns.Select(pattern => $"'{pattern.Text}'"))));
+            }
         }
 
         private static string FormatRuleSetNames(List<string> names)

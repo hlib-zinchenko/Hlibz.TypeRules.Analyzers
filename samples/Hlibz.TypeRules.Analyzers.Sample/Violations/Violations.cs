@@ -1,6 +1,6 @@
 namespace Sample.Violations;
 
-// TR001 and TR002: public, and not sealed.
+// TR001 and TR002: public, and not sealed. TR006: not in an Endpoints namespace.
 public class ListUsersEndpoint : IEndpoint
 {
     public string Route => "users";
