@@ -19,6 +19,9 @@ internal class Order : Entity<int>
 
     // TR005: a mutable collection exposed by an entity.
     public List<int> Lines { get; } = [];
+
+    // TR007: an entity holding another entity instead of its id.
+    public Handlers.User? Owner { get; private set; }
 }
 
 // TR003: a handler with no IListOrdersHandler companion interface.

@@ -22,6 +22,10 @@ internal static class Verifier
             public abstract class Entity<TId> { }
 
             public sealed class SealedBase { }
+
+            public interface IAggregateRoot { }
+
+            public interface IDto { }
         }
 
         namespace App.Contracts

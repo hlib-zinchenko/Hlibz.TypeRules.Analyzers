@@ -22,6 +22,8 @@ internal static class ConfigurationParser
     public const string AllowInitOption = "allow_init";
     public const string ReadOnlyCollectionsOption = "readonly_collections";
     public const string NamespacePatternOption = "namespace_pattern";
+    public const string ForbidMemberTypesOption = "forbid_member_types";
+    public const string AllowSelfReferencesOption = "allow_self_references";
 
     private static readonly string[] KnownOptions =
     [
@@ -33,6 +35,8 @@ internal static class ConfigurationParser
         AllowInitOption,
         ReadOnlyCollectionsOption,
         NamespacePatternOption,
+        ForbidMemberTypesOption,
+        AllowSelfReferencesOption,
     ];
 
     /// <summary>Options that each add a check; a rule set needs at least one of them.</summary>
@@ -44,6 +48,7 @@ internal static class ConfigurationParser
         MaxSetterAccessibilityOption,
         ReadOnlyCollectionsOption,
         NamespacePatternOption,
+        ForbidMemberTypesOption,
     ];
 
     private static readonly char[] MatchSeparators = ['|', ','];
@@ -94,10 +99,25 @@ internal static class ConfigurationParser
             return TypeRulesConfiguration.Empty;
         }
 
+        // A rule set another one forbids (forbid_member_types) is used as a target: it needs a
+        // match, but no constraint of its own.
+        HashSet<string> forbiddenTargets = new(
+            ruleSetOptions.Values.SelectMany(values =>
+                values.TryGetValue(ForbidMemberTypesOption, out string? names)
+                    ? SplitList(names)
+                    : []),
+            StringComparer.Ordinal);
+
         ImmutableArray<TypeRuleSet>.Builder ruleSets = ImmutableArray.CreateBuilder<TypeRuleSet>();
         foreach (KeyValuePair<string, Dictionary<string, string>> entry in ruleSetOptions)
         {
-            TypeRuleSet? ruleSet = ParseRuleSet(entry.Key, entry.Value, compilation, errors);
+            TypeRuleSet? ruleSet = ParseRuleSet(
+                entry.Key,
+                entry.Value,
+                compilation,
+                ruleSetOptions.Keys,
+                forbiddenTargets.Contains(entry.Key),
+                errors);
             if (ruleSet is not null)
             {
                 ruleSets.Add(ruleSet);
@@ -111,6 +131,8 @@ internal static class ConfigurationParser
         string name,
         Dictionary<string, string> values,
         Compilation compilation,
+        ICollection<string> configuredRuleSets,
+        bool isForbiddenTarget,
         ImmutableArray<string>.Builder errors)
     {
         int errorCount = errors.Count;
@@ -146,7 +168,20 @@ internal static class ConfigurationParser
         bool requireCompanionInterface =
             ParseBoolean(name, CompanionInterfaceOption, values, errors);
 
-        if (!ConstraintOptions.Any(values.ContainsKey))
+        ImmutableArray<string> forbiddenMemberRuleSets =
+            ParseForbiddenRuleSets(name, values, configuredRuleSets, errors);
+        bool allowSelfReferences = !values.ContainsKey(AllowSelfReferencesOption)
+            || ParseBoolean(name, AllowSelfReferencesOption, values, errors);
+
+        if (values.ContainsKey(AllowSelfReferencesOption)
+            && !values.ContainsKey(ForbidMemberTypesOption))
+        {
+            errors.Add(
+                $"rule set '{name}' sets allow_self_references without forbid_member_types, "
+                + "which it modifies");
+        }
+
+        if (!isForbiddenTarget && !ConstraintOptions.Any(values.ContainsKey))
         {
             errors.Add(
                 $"rule set '{name}' sets no constraint (expected "
@@ -195,7 +230,51 @@ internal static class ConfigurationParser
             maxSetterAccessibility,
             allowInit,
             readOnlyCollections,
-            namespacePatterns);
+            namespacePatterns,
+            forbiddenMemberRuleSets,
+            allowSelfReferences);
+    }
+
+    private static ImmutableArray<string> ParseForbiddenRuleSets(
+        string ruleSetName,
+        Dictionary<string, string> values,
+        ICollection<string> configuredRuleSets,
+        ImmutableArray<string>.Builder errors)
+    {
+        if (!values.TryGetValue(ForbidMemberTypesOption, out string? value))
+        {
+            return ImmutableArray<string>.Empty;
+        }
+
+        string[] names = SplitList(value);
+        if (names.Length == 0)
+        {
+            errors.Add($"rule set '{ruleSetName}' has an empty forbid_member_types option");
+        }
+
+        foreach (string forbidden in names)
+        {
+            if (!configuredRuleSets.Contains(forbidden))
+            {
+                errors.Add(
+                    $"rule set '{ruleSetName}' forbids member types of rule set '{forbidden}', "
+                    + "which isn't configured");
+            }
+        }
+
+        return names.ToImmutableArray();
+    }
+
+    /// <summary>
+    /// Splits a <c>|</c>- or <c>,</c>-separated option value. Rule-set names are lowercased, like
+    /// the keys they come from.
+    /// </summary>
+    private static string[] SplitList(string value)
+    {
+        return value.Split(MatchSeparators, StringSplitOptions.RemoveEmptyEntries)
+            .Select(name => name.Trim().ToLowerInvariant())
+            .Where(name => name.Length > 0)
+            .ToArray();
     }
 
     private static ImmutableArray<NamespacePattern> ParseNamespacePatterns(

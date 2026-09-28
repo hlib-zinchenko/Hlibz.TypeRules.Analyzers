@@ -14,6 +14,7 @@ internal static class Descriptors
     public const string SetterExceedsMaximumId = "TR004";
     public const string MutableCollectionExposedId = "TR005";
     public const string WrongNamespaceId = "TR006";
+    public const string ForbiddenMemberTypeId = "TR007";
 
     public static readonly DiagnosticDescriptor InvalidConfiguration = new(
         InvalidConfigurationId,
@@ -102,6 +103,19 @@ internal static class Descriptors
             + "declared in a namespace matching one of the rule set's namespace_pattern "
             + "alternatives.",
         helpLinkUri: HelpLink(WrongNamespaceId));
+
+    public static readonly DiagnosticDescriptor ForbiddenMemberType = new(
+        ForbiddenMemberTypeId,
+        title: "Type holds a reference to a forbidden type",
+        messageFormat: "'{0}' holds '{1}', a type of rule set '{2}', which rule set '{3}' forbids",
+        category: "Design",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Fields and auto-properties of types that inherit from or implement a rule "
+            + "set's matched types must not hold types of the rule sets named in its "
+            + "forbid_member_types, directly or inside collections and other generic types. "
+            + "For aggregate roots referencing each other, store the other one's id instead.",
+        helpLinkUri: HelpLink(ForbiddenMemberTypeId));
 
     private static string HelpLink(string id)
     {

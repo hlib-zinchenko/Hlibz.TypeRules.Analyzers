@@ -19,7 +19,9 @@ internal sealed class TypeRuleSet
         AccessScope? maxSetterAccessibility,
         bool allowInit,
         bool readOnlyCollections,
-        ImmutableArray<NamespacePattern> namespacePatterns)
+        ImmutableArray<NamespacePattern> namespacePatterns,
+        ImmutableArray<string> forbiddenMemberRuleSets,
+        bool allowSelfReferences)
     {
         Name = name;
         MatchedTypes = matchedTypes;
@@ -30,6 +32,8 @@ internal sealed class TypeRuleSet
         AllowInit = allowInit;
         ReadOnlyCollections = readOnlyCollections;
         NamespacePatterns = namespacePatterns;
+        ForbiddenMemberRuleSets = forbiddenMemberRuleSets;
+        AllowSelfReferences = allowSelfReferences;
     }
 
     public string Name { get; }
@@ -56,6 +60,24 @@ internal sealed class TypeRuleSet
     /// Alternatives: a matched type's namespace must match at least one. Empty = any namespace.
     /// </summary>
     public ImmutableArray<NamespacePattern> NamespacePatterns { get; }
+
+    /// <summary>Names of the rule sets whose types this rule set's types may not store.</summary>
+    public ImmutableArray<string> ForbiddenMemberRuleSets { get; }
+
+    /// <summary>
+    /// Whether a type may still store its own type (<c>Category.Parent</c>) when it's forbidden.
+    /// </summary>
+    public bool AllowSelfReferences { get; }
+
+    /// <summary>
+    /// Whether <paramref name="type"/> belongs to this rule set: it's one of the matched types
+    /// itself (e.g. a field typed as the marker interface), or inherits from or implements one.
+    /// </summary>
+    public bool Contains(INamedTypeSymbol type)
+    {
+        return MatchedTypes.Contains(type.OriginalDefinition, SymbolEqualityComparer.Default)
+            || Matches(type);
+    }
 
     /// <summary>
     /// Whether <paramref name="type"/> inherits from or implements any matched type, directly or

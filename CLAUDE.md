@@ -92,7 +92,13 @@ needs `--project <path>` rather than a bare directory argument.
   reports once per violated rule set, since namespace requirements can't be combined the way
   accessibility maximums are, and has no code fix: moving a type means moving callers and the
   file, which the IDE's own refactoring does.
-- **Rule IDs `TR000`–`TR006` are public contract.** Never renumber or reuse one. Descriptors live
+- **TR007** (`MemberRules.AnalyzeReferences`) checks stored state only: explicit fields of any
+  accessibility, and auto-properties through their implicit backing fields (which also covers
+  positional records). Computed properties are skipped, since the fields they read are checked.
+  `FindHeldType` searches array elements and type arguments recursively. `forbid_member_types`
+  names other rule sets, resolved through `TypeRulesConfiguration.Find`; the parser collects
+  every forbidden target first, because a target only needs `match`, not a constraint.
+- **Rule IDs `TR000`–`TR007` are public contract.** Never renumber or reuse one. Descriptors live
   in `Descriptors.cs`, with help links to `docs/rules/<ID>.md`.
 
 ## Tests

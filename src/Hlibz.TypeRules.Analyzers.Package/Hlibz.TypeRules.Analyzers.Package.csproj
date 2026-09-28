@@ -17,7 +17,7 @@
     <PackageId>Hlibz.TypeRules.Analyzers</PackageId>
     <Version>0.1.0</Version>
     <Authors>Hlib Zinchenko</Authors>
-    <Description>Roslyn analyzers that enforce the shape of types based on what they inherit or implement, configured in .editorconfig: for example, every IEndpoint implementation must be internal and sealed, every request handler must have its own IFooHandler interface, entities must not expose public setters or mutable collections, and EF Core configurations must live in a Database.Configurations namespace. Violations show up in the IDE and fail the build, instead of waiting for an architecture test to run. Each rule has a code fix.</Description>
+    <Description>Roslyn analyzers that enforce the shape of types based on what they inherit or implement, configured in .editorconfig: for example, every IEndpoint implementation must be internal and sealed, every request handler must have its own IFooHandler interface, entities must not expose public setters or mutable collections or hold other aggregate roots, and EF Core configurations must live in a Database.Configurations namespace. Violations show up in the IDE and fail the build, instead of waiting for an architecture test to run. Each rule has a code fix.</Description>
     <Copyright>Copyright (c) 2026 Hlib Zinchenko</Copyright>
     <PackageTags>roslyn;analyzers;roslyn-analyzers;code-analysis;architecture;conventions;editorconfig;sealed;accessibility;dependency-injection;mediatr;ddd;vertical-slice</PackageTags>
     <PackageReleaseNotes>https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/releases</PackageReleaseNotes>

@@ -31,7 +31,8 @@ public sealed class InvalidConfigurationTests
                 "unknown option 'require_seald' in rule set 'endpoints' "
                 + "(known options: match, max_accessibility, require_sealed, "
                 + "companion_interface, max_setter_accessibility, allow_init, "
-                + "readonly_collections, namespace_pattern)"));
+                + "readonly_collections, namespace_pattern, forbid_member_types, "
+                + "allow_self_references)"));
     }
 
     [Fact]
@@ -57,7 +58,8 @@ public sealed class InvalidConfigurationTests
             Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
                 "rule set 'endpoints' sets no constraint "
                 + "(expected max_accessibility, require_sealed, companion_interface, "
-                + "max_setter_accessibility, readonly_collections, namespace_pattern)"));
+                + "max_setter_accessibility, readonly_collections, namespace_pattern, "
+                + "forbid_member_types)"));
     }
 
     [Fact]
@@ -183,7 +185,8 @@ public sealed class InvalidConfigurationTests
             Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
                 "rule set 'endpoints' sets no constraint "
                 + "(expected max_accessibility, require_sealed, companion_interface, "
-                + "max_setter_accessibility, readonly_collections, namespace_pattern)"));
+                + "max_setter_accessibility, readonly_collections, namespace_pattern, "
+                + "forbid_member_types)"));
     }
 
     [Fact]

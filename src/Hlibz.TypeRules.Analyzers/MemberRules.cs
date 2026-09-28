@@ -158,4 +158,113 @@ internal static class MemberRules
     {
         return string.Join(", ", names.Select(name => $"'{name}'"));
     }
+
+    /// <summary>
+    /// TR007: the state a matched type stores (explicit fields of any accessibility, and
+    /// auto-properties through their backing fields) must not hold a type of a rule set it
+    /// forbids. Computed properties are skipped: they store nothing, and whatever they read from
+    /// is a field that's checked itself.
+    /// </summary>
+    public static void AnalyzeReferences(
+        SymbolAnalysisContext context,
+        INamedTypeSymbol type,
+        List<TypeRuleSet> matching,
+        TypeRulesConfiguration configuration)
+    {
+        List<(TypeRuleSet Owner, TypeRuleSet Forbidden)> forbidden = [];
+        foreach (TypeRuleSet ruleSet in matching)
+        {
+            foreach (string name in ruleSet.ForbiddenMemberRuleSets)
+            {
+                if (configuration.Find(name) is { } forbiddenRuleSet)
+                {
+                    forbidden.Add((ruleSet, forbiddenRuleSet));
+                }
+            }
+        }
+
+        if (forbidden.Count == 0)
+        {
+            return;
+        }
+
+        foreach (IFieldSymbol field in type.GetMembers().OfType<IFieldSymbol>())
+        {
+            ISymbol? stored = field switch
+            {
+                { IsConst: true } => null,
+                { IsImplicitlyDeclared: true, AssociatedSymbol: IPropertySymbol property } =>
+                    property,
+                { IsImplicitlyDeclared: false } => field,
+                _ => null,
+            };
+
+            if (stored is null || stored.Locations.IsEmpty)
+            {
+                continue;
+            }
+
+            foreach ((TypeRuleSet owner, TypeRuleSet forbiddenRuleSet) in forbidden)
+            {
+                INamedTypeSymbol? held = FindHeldType(
+                    field.Type,
+                    candidate => forbiddenRuleSet.Contains(candidate)
+                        && !(owner.AllowSelfReferences
+                            && SymbolEqualityComparer.Default.Equals(
+                                candidate.OriginalDefinition,
+                                type.OriginalDefinition)));
+
+                if (held is null)
+                {
+                    continue;
+                }
+
+                context.ReportDiagnostic(Diagnostic.Create(
+                    Descriptors.ForbiddenMemberType,
+                    stored.Locations[0],
+                    $"{type.Name}.{stored.Name}",
+                    held.WithNullableAnnotation(NullableAnnotation.None)
+                        .ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat),
+                    forbiddenRuleSet.Name,
+                    owner.Name));
+                break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The first type in <paramref name="type"/> that <paramref name="isForbidden"/> accepts: the
+    /// type itself, an array's element type, or any type argument, recursively, so
+    /// <c>List&lt;Order&gt;</c>, <c>Dictionary&lt;Guid, Order&gt;</c>, <c>Order?</c>,
+    /// <c>Lazy&lt;Order&gt;</c> and <c>(Order, int)</c> all hold an <c>Order</c>.
+    /// </summary>
+    private static INamedTypeSymbol? FindHeldType(
+        ITypeSymbol type,
+        Func<INamedTypeSymbol, bool> isForbidden)
+    {
+        switch (type)
+        {
+            case IArrayTypeSymbol array:
+                return FindHeldType(array.ElementType, isForbidden);
+
+            case INamedTypeSymbol named:
+                if (isForbidden(named))
+                {
+                    return named;
+                }
+
+                foreach (ITypeSymbol typeArgument in named.TypeArguments)
+                {
+                    if (FindHeldType(typeArgument, isForbidden) is { } held)
+                    {
+                        return held;
+                    }
+                }
+
+                return null;
+
+            default:
+                return null;
+        }
+    }
 }
