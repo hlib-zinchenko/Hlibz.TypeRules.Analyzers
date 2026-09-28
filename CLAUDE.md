@@ -128,7 +128,8 @@ which must match the Environment on the nuget.org trusted-publishing policy, and
 `${{ secrets.NUGET_USER }}` repo secret with the nuget.org profile username.
 
 Before tagging, move the release's rules from `AnalyzerReleases.Unshipped.md` into
-`AnalyzerReleases.Shipped.md` under `## Release X.Y.Z`. Don't bump the csproj version; the tag
+`AnalyzerReleases.Shipped.md` under `## Release X.Y.Z`. Before the first release, also remove the "Not on NuGet
+yet" note from README's Install section: the README is packed into the package. Don't bump the csproj version; the tag
 drives it. Then `git tag vX.Y.Z && git push origin vX.Y.Z`.
 
 ## Conventions
