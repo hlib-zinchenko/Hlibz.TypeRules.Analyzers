@@ -1,0 +1,35 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 100
+
+[*.json]
+indent_size = 2
+
+[*.csproj]
+indent_size = 2
+
+[*.yml]
+indent_size = 2
+
+[*.cs]
+tab_width = 4
+
+csharp_prefer_braces = true:warning
+csharp_style_expression_bodied_lambdas = true:silent
+csharp_style_expression_bodied_methods = false:silent
+csharp_style_var_for_built_in_types = false:error
+csharp_style_var_when_type_is_apparent = false:error
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+
+dotnet_separate_import_directive_groups = true
+dotnet_sort_system_directives_first = true
+dotnet_style_coalesce_expression = true:warning
+dotnet_style_null_propagation = true:warning

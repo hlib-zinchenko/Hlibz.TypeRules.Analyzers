@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write # required to request the OIDC token for NuGet Trusted Publishing
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --project tests/Hlibz.TypeRules.Analyzers.Tests --no-build --configuration Release
+
+      - name: Determine package version from tag
+        id: version
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Pack
+        run: >
+          dotnet pack src/Hlibz.TypeRules.Analyzers.Package
+          --configuration Release
+          --output ./artifacts
+          -p:Version=${{ steps.version.outputs.value }}
+
+      - name: NuGet login (OIDC -> temporary API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: NuGet push
+        run: >
+          dotnet nuget push "./artifacts/*.nupkg"
+          --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate

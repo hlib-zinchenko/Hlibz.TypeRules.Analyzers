@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Read-only token: nothing in CI needs to write to the repository.
+permissions:
+  contents: read
+
+# One run per PR at a time: pushing again cancels the PR's run still in progress. Runs on main are
+# never cancelled.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --project tests/Hlibz.TypeRules.Analyzers.Tests --no-build --configuration Release
+
+      # The sample loads the analyzer from a real .editorconfig. It built clean above; with its
+      # violations compiled in, it must fail with both TR001 and TR002.
+      - name: Sample reports violations
+        run: |
+          set +e
+          dotnet build samples/Hlibz.TypeRules.Analyzers.Sample --configuration Release \
+            -p:IncludeViolations=true > violations.log 2>&1
+          status=$?
+          set -e
+          cat violations.log
+          if [ "$status" -eq 0 ]; then
+            echo "::error::The sample built with its violations included."
+            exit 1
+          fi
+          grep -q "error TR001" violations.log
+          grep -q "error TR002" violations.log
+
+      - name: Pack
+        run: dotnet pack src/Hlibz.TypeRules.Analyzers.Package --no-build --configuration Release --output ./artifacts
+
+      - name: Package contains both analyzer assemblies
+        run: |
+          unzip -l ./artifacts/*.nupkg > contents.txt
+          cat contents.txt
+          grep -q "analyzers/dotnet/cs/Hlibz.TypeRules.Analyzers.dll" contents.txt
+          grep -q "analyzers/dotnet/cs/Hlibz.TypeRules.Analyzers.CodeFixes.dll" contents.txt

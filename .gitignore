@@ -1,0 +1,29 @@
+## .NET / Visual Studio / Rider
+
+bin/
+obj/
+out/
+*.user
+*.suo
+
+.vs/
+.idea/
+*.DotSettings.user
+
+# Rider
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+
+# NuGet
+*.nupkg
+*.snupkg
+nupkg/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+[Ll]og/
+[Ll]ogs/
+
+# macOS
+.DS_Store

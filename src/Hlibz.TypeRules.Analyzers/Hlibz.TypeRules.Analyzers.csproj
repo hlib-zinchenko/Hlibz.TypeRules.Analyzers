@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The analyzers. Deliberately no Microsoft.CodeAnalysis.Workspaces reference (RS1038): the
+    compiler loads this assembly on its own, without the Workspaces layer, so code fixes live in
+    Hlibz.TypeRules.Analyzers.CodeFixes. Packed by Hlibz.TypeRules.Analyzers.Package.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <!-- Never packed itself; distinct from the package project's PackageId, which restore would
+         otherwise see as the same name. -->
+    <PackageId>$(AssemblyName).Internal</PackageId>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Hlibz.TypeRules.Analyzers.CodeFixes" />
+    <InternalsVisibleTo Include="Hlibz.TypeRules.Analyzers.Tests" />
+  </ItemGroup>
+
+</Project>

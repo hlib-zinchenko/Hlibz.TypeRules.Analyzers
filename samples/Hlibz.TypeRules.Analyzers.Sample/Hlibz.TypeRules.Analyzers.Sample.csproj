@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Consumes the analyzers the way a real project does: configured in this folder's .editorconfig,
+    loaded as an analyzer rather than referenced. Must build clean. With -p:IncludeViolations=true
+    it also compiles Violations/, which must fail with TR001 and TR002 (CI checks both).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Hlibz.TypeRules.Analyzers\Hlibz.TypeRules.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IncludeViolations)' != 'true'">
+    <Compile Remove="Violations/**" />
+  </ItemGroup>
+
+</Project>

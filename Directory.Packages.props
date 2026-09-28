@@ -1,0 +1,21 @@
+<Project>
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+    <ItemGroup>
+        <!--
+            The Roslyn version the analyzers compile against is the oldest compiler they can run
+            in: 4.8 ships with the .NET 8 SDK and Visual Studio 17.8. Raising it drops support for
+            older SDKs/IDEs, so only do it when a newer API is actually needed. The tests run the
+            analyzers on this same version.
+        -->
+        <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+        <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" />
+        <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+        <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.4" />
+        <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.4" />
+        <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+        <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+        <PackageVersion Include="xunit.v3" Version="4.0.1" />
+    </ItemGroup>
+</Project>

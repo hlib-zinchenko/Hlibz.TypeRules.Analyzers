@@ -1,0 +1,13 @@
+# Not root: the repository's own .editorconfig still applies. This file only adds the rule sets.
+
+[*.cs]
+typerules.endpoints.match = T:Sample.IEndpoint
+typerules.endpoints.max_accessibility = internal
+typerules.endpoints.require_sealed = true
+
+typerules.handlers.match = T:Sample.IRequestHandler`2
+typerules.handlers.max_accessibility = internal
+typerules.handlers.require_sealed = true
+
+typerules.entities.match = T:Sample.Entity`1
+typerules.entities.require_sealed = true

@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Packs the analyzer and code-fix assemblies into one NuGet package, under
+    analyzers/dotnet/cs. Builds no code of its own.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddAnalyzersToPackage</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <PropertyGroup Label="NuGet metadata">
+    <PackageId>Hlibz.TypeRules.Analyzers</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Hlib Zinchenko</Authors>
+    <Description>Roslyn analyzers that enforce the shape of types based on what they inherit or implement, configured in .editorconfig: for example, every IEndpoint implementation must be internal and sealed. Violations show up in the IDE and fail the build, instead of waiting for an architecture test to run. Each rule has a code fix.</Description>
+    <Copyright>Copyright (c) 2026 Hlib Zinchenko</Copyright>
+    <PackageTags>roslyn;analyzers;roslyn-analyzers;code-analysis;architecture;conventions;editorconfig;sealed;accessibility;ddd;vertical-slice</PackageTags>
+    <PackageReleaseNotes>https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/releases</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hlibz.TypeRules.Analyzers\Hlibz.TypeRules.Analyzers.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Hlibz.TypeRules.Analyzers.CodeFixes\Hlibz.TypeRules.Analyzers.CodeFixes.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <Target Name="AddAnalyzersToPackage">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(OutputPath)Hlibz.TypeRules.Analyzers.dll" PackagePath="analyzers/dotnet/cs" />
+      <TfmSpecificPackageFile Include="$(OutputPath)Hlibz.TypeRules.Analyzers.CodeFixes.dll" PackagePath="analyzers/dotnet/cs" />
+    </ItemGroup>
+  </Target>
+
+</Project>
