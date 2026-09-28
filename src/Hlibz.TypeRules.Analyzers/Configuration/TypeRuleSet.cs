@@ -14,12 +14,14 @@ internal sealed class TypeRuleSet
         string name,
         ImmutableArray<INamedTypeSymbol> matchedTypes,
         AccessScope? maxAccessibility,
-        bool requireSealed)
+        bool requireSealed,
+        bool requireCompanionInterface)
     {
         Name = name;
         MatchedTypes = matchedTypes;
         MaxAccessibility = maxAccessibility;
         RequireSealed = requireSealed;
+        RequireCompanionInterface = requireCompanionInterface;
     }
 
     public string Name { get; }
@@ -31,6 +33,8 @@ internal sealed class TypeRuleSet
 
     public bool RequireSealed { get; }
 
+    public bool RequireCompanionInterface { get; }
+
     /// <summary>
     /// Whether <paramref name="type"/> inherits from or implements any matched type, directly or
     /// indirectly. A matched type never matches itself. Generic matched types match every
@@ -40,15 +44,24 @@ internal sealed class TypeRuleSet
     {
         foreach (INamedTypeSymbol matchedType in MatchedTypes)
         {
-            if (matchedType.TypeKind == TypeKind.Interface
-                ? Implements(type, matchedType)
-                : InheritsFrom(type, matchedType))
+            if (IsDerivedFrom(type, matchedType))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="type"/> inherits from or implements <paramref name="matchedType"/>
+    /// (a definition), directly or indirectly.
+    /// </summary>
+    public static bool IsDerivedFrom(INamedTypeSymbol type, INamedTypeSymbol matchedType)
+    {
+        return matchedType.TypeKind == TypeKind.Interface
+            ? Implements(type, matchedType)
+            : InheritsFrom(type, matchedType);
     }
 
     private static bool Implements(INamedTypeSymbol type, INamedTypeSymbol matchedInterface)

@@ -10,6 +10,7 @@ internal static class Descriptors
     public const string InvalidConfigurationId = "TR000";
     public const string AccessibilityExceedsMaximumId = "TR001";
     public const string TypeMustBeSealedId = "TR002";
+    public const string CompanionInterfaceMissingId = "TR003";
 
     public static readonly DiagnosticDescriptor InvalidConfiguration = new(
         InvalidConfigurationId,
@@ -43,6 +44,21 @@ internal static class Descriptors
         description: "Non-abstract classes that inherit from or implement a rule set's matched "
             + "types must be sealed when the rule set sets require_sealed = true.",
         helpLinkUri: HelpLink(TypeMustBeSealedId));
+
+    public static readonly DiagnosticDescriptor CompanionInterfaceMissing = new(
+        CompanionInterfaceMissingId,
+        title: "Type must implement its companion interface",
+        messageFormat: "'{0}' must implement a companion interface '{1}' that extends {2}, as "
+            + "required by rule set {3}",
+        category: "Design",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Non-abstract types that implement a rule set's matched interfaces must also "
+            + "implement an interface named after them (Foo implements IFoo), declared next to "
+            + "them, that itself extends a matched interface, when the rule set sets "
+            + "companion_interface = true. Consumers then depend on IFoo, which is what "
+            + "reflection-based dependency injection registers.",
+        helpLinkUri: HelpLink(CompanionInterfaceMissingId));
 
     private static string HelpLink(string id)
     {

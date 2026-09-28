@@ -13,7 +13,7 @@ internal sealed class User : Entity<Guid>
     public string Name { get; }
 }
 
-internal sealed class GetUserHandler : IRequestHandler<GetUserQuery, User>
+internal sealed class GetUserHandler : IGetUserHandler
 {
     public User Handle(GetUserQuery request)
     {

@@ -17,12 +17,22 @@ internal static class ConfigurationParser
     public const string MatchOption = "match";
     public const string MaxAccessibilityOption = "max_accessibility";
     public const string RequireSealedOption = "require_sealed";
+    public const string CompanionInterfaceOption = "companion_interface";
 
     private static readonly string[] KnownOptions =
     [
         MatchOption,
         MaxAccessibilityOption,
         RequireSealedOption,
+        CompanionInterfaceOption,
+    ];
+
+    /// <summary>Options that each add a check; a rule set needs at least one of them.</summary>
+    private static readonly string[] ConstraintOptions =
+    [
+        MaxAccessibilityOption,
+        RequireSealedOption,
+        CompanionInterfaceOption,
     ];
 
     private static readonly char[] MatchSeparators = ['|', ','];
@@ -117,26 +127,37 @@ internal static class ConfigurationParser
             }
         }
 
-        bool requireSealed = false;
-        if (values.TryGetValue(RequireSealedOption, out string? requireSealedValue)
-            && !bool.TryParse(requireSealedValue.Trim(), out requireSealed))
-        {
-            errors.Add(
-                $"rule set '{name}' has an invalid require_sealed '{requireSealedValue}' "
-                + "(expected true or false)");
-        }
+        bool requireSealed = ParseBoolean(name, RequireSealedOption, values, errors);
+        bool requireCompanionInterface =
+            ParseBoolean(name, CompanionInterfaceOption, values, errors);
 
-        if (!values.ContainsKey(MaxAccessibilityOption) && !values.ContainsKey(RequireSealedOption))
+        if (!ConstraintOptions.Any(values.ContainsKey))
         {
             errors.Add(
-                $"rule set '{name}' sets no constraint (expected max_accessibility or "
-                + "require_sealed)");
+                $"rule set '{name}' sets no constraint (expected "
+                + $"{string.Join(", ", ConstraintOptions)})");
         }
 
         ImmutableArray<INamedTypeSymbol> matchedTypes = ImmutableArray<INamedTypeSymbol>.Empty;
         if (values.TryGetValue(MatchOption, out string? matchValue))
         {
             matchedTypes = ResolveMatchedTypes(name, matchValue, compilation, errors);
+
+            // A companion interface has to extend a matched type, and interfaces can only extend
+            // interfaces.
+            if (requireCompanionInterface)
+            {
+                foreach (INamedTypeSymbol matchedType in matchedTypes)
+                {
+                    if (matchedType.TypeKind != TypeKind.Interface)
+                    {
+                        string id = DocumentationCommentId.CreateDeclarationId(matchedType);
+                        errors.Add(
+                            $"rule set '{name}' sets companion_interface, so every match type "
+                            + $"must be an interface, but '{id}' is not");
+                    }
+                }
+            }
         }
         else
         {
@@ -150,7 +171,33 @@ internal static class ConfigurationParser
             return null;
         }
 
-        return new TypeRuleSet(name, matchedTypes, maxAccessibility, requireSealed);
+        return new TypeRuleSet(
+            name,
+            matchedTypes,
+            maxAccessibility,
+            requireSealed,
+            requireCompanionInterface);
+    }
+
+    private static bool ParseBoolean(
+        string ruleSetName,
+        string option,
+        Dictionary<string, string> values,
+        ImmutableArray<string>.Builder errors)
+    {
+        if (!values.TryGetValue(option, out string? value))
+        {
+            return false;
+        }
+
+        if (bool.TryParse(value.Trim(), out bool result))
+        {
+            return result;
+        }
+
+        errors.Add(
+            $"rule set '{ruleSetName}' has an invalid {option} '{value}' (expected true or false)");
+        return false;
     }
 
     private static ImmutableArray<INamedTypeSymbol> ResolveMatchedTypes(

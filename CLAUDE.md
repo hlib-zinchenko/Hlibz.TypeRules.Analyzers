@@ -64,8 +64,18 @@ needs `--project <path>` rather than a bare directory argument.
 - **Code fixes only fix when it's safe.** The TR001 fix picks the most permissive level within the
   maximum that's legal where the type is declared (no protected levels inside structs, static or
   sealed classes); the TR002 fix isn't offered when anything derives from the type or it declares
-  new virtual/protected members. Tests cover each "no fix offered" case.
-- **Rule IDs `TR000`–`TR002` are public contract.** Never renumber or reuse one. Descriptors live
+  new virtual/protected members; the TR003 fix only acts when the companion is missing or
+  exists and is valid. Tests cover each "no fix offered" case.
+- **`CompanionInterfaces`** (TR003) holds the companion lookup (`I` + name, same arity, same
+  namespace or containing type) shared by the analyzer and `CompanionInterfaceCodeFixProvider`,
+  and passes the fix its state (`Missing`/`NotImplemented`; absent = no safe fix) and the matched
+  interfaces' documentation IDs as diagnostic properties. The fix generates `IFoo.cs` through
+  `ImportAdder`/`Simplifier`/`Formatter`, then normalizes to the source file's line endings,
+  because those APIs use the workspace default. It has its own `FixAllProvider`: the batch fixer
+  drops added documents, so it re-resolves each type by documentation ID and applies the fixes
+  one after another. Roslyn 4.8 has `ImportAdder.AddImportsAsync` with
+  `Simplifier.AddImportsAnnotation`, not the newer `AddImportsFromSymbolAnnotationAsync`.
+- **Rule IDs `TR000`–`TR003` are public contract.** Never renumber or reuse one. Descriptors live
   in `Descriptors.cs`, with help links to `docs/rules/<ID>.md`.
 
 ## Tests
@@ -74,7 +84,7 @@ needs `--project <path>` rather than a bare directory argument.
 takes configuration as `.editorconfig` lines and adds `Verifier.Contracts` (the `App.*` base types
 the tests match on) to every compilation. Diagnostics are marked `{|#0:Name|}` and expected with
 `.WithLocation(0)`; TR000 has no location. To assert that no fix is offered, pass the same sources
-as the fixed sources. Test names follow `Subject_WithCondition_ExpectedOutcome`, e.g.
+as the fixed sources; files a fix adds go in `addedFiles` by file name. Test names follow `Subject_WithCondition_ExpectedOutcome`, e.g.
 `Fix_WithDerivedClass_OffersNoFix`.
 
 `samples/Hlibz.TypeRules.Analyzers.Sample` references the analyzer project as an analyzer, is

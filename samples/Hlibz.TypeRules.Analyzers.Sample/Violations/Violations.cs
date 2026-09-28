@@ -14,3 +14,12 @@ internal class Order : Entity<int>
     {
     }
 }
+
+// TR003: a handler with no IListOrdersHandler companion interface.
+internal sealed class ListOrdersHandler : IRequestHandler<int, Order>
+{
+    public Order Handle(int request)
+    {
+        return new Order(request);
+    }
+}

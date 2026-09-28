@@ -35,10 +35,11 @@ typerules.endpoints.match = T:MyApp.Api.IEndpoint
 typerules.endpoints.max_accessibility = internal
 typerules.endpoints.require_sealed = true
 
-# Handlers: any construction of the generic interface.
+# Handlers: any construction of the generic interface, each with its own IFooHandler interface.
 typerules.handlers.match = T:MyApp.Application.IRequestHandler`2
 typerules.handlers.max_accessibility = internal
 typerules.handlers.require_sealed = true
+typerules.handlers.companion_interface = true
 ```
 
 Nothing is checked until you configure a rule set, so installing the package on its own changes
@@ -51,8 +52,9 @@ nothing.
 | [TR000](docs/rules/TR000.md) | TypeRules configuration is invalid | — |
 | [TR001](docs/rules/TR001.md) | Type is more accessible than its rule set allows | Change the access modifier |
 | [TR002](docs/rules/TR002.md) | Type must be sealed | Add `sealed` |
+| [TR003](docs/rules/TR003.md) | Type must implement its companion interface (`Foo` → `IFoo`) | Generate `IFoo`, or implement it |
 
-All three are warnings by default. With `TreatWarningsAsErrors`, they fail the build. Change a
+All rules are warnings by default. With `TreatWarningsAsErrors`, they fail the build. Change a
 rule's severity the usual way:
 
 ```ini
@@ -69,8 +71,9 @@ to choose: letters, digits, `_` and `-`.
 | `match` | One or more types, separated by `\|` or `,` | The rule set applies to every class, struct and record that inherits from or implements any of them, directly or indirectly |
 | `max_accessibility` | `public`, `protected_internal`, `internal`, `protected`, `private_protected` or `private` | TR001: matched types can't be more accessible than this |
 | `require_sealed` | `true` or `false` | TR002: matched non-abstract classes must be sealed |
+| `companion_interface` | `true` or `false` | TR003: matched non-abstract types must implement an `I<TypeName>` interface, declared next to them, that extends a matched interface. Every `match` type must then be an interface |
 
-A rule set needs `match` and at least one of the other two options.
+A rule set needs `match` and at least one of the other options.
 
 ### Naming types in `match`
 
@@ -91,7 +94,7 @@ and `Entity<int>` alike.
 - **Classes, structs and records** that inherit from or implement a matched type. Interfaces that
   extend a matched interface are not checked, and neither is the matched type itself.
 - **Abstract classes are checked by TR001** (an abstract endpoint base is still an endpoint) but
-  not by TR002, since they can't be sealed.
+  not by TR002 or TR003: they can't be sealed, and nothing resolves them from DI.
 - **Effective accessibility.** A `public` class nested inside an `internal` class is internal, so
   TR001 doesn't report it.
 - **Partial types** are reported once. The TR001 fix rewrites every part that states an
@@ -136,8 +139,6 @@ dotnet_code_quality.CA1710.additional_required_suffixes = T:MyApp.Api.IEndpoint-
 
 ## Roadmap
 
-- **TR003** Companion interface: `GetUsersHandler` must implement an `IGetUsersHandler` that itself
-  extends the matched type (for reflection-based DI registration).
 - **TR004** No public or internal setters on matched types.
 - **TR005** No mutable collections (`List<T>`, arrays) exposed by matched types.
 - **TR006** Matched types must live under a given namespace.

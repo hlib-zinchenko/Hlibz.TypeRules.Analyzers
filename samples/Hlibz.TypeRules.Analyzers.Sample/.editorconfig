@@ -8,6 +8,7 @@ typerules.endpoints.require_sealed = true
 typerules.handlers.match = T:Sample.IRequestHandler`2
 typerules.handlers.max_accessibility = internal
 typerules.handlers.require_sealed = true
+typerules.handlers.companion_interface = true
 
 typerules.entities.match = T:Sample.Entity`1
 typerules.entities.require_sealed = true

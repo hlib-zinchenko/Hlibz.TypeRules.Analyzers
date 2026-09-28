@@ -23,6 +23,13 @@ internal static class Verifier
 
             public sealed class SealedBase { }
         }
+
+        namespace App.Contracts
+        {
+            public interface IRequestHandler { }
+
+            public interface IRequestHandler<TRequest, TResponse> : IRequestHandler { }
+        }
         """;
 
     private const string ContractsPath = "/0/Contracts.cs";
@@ -70,10 +77,24 @@ internal static class Verifier
     /// <summary>
     /// Pass the fixed sources equal to the sources to assert that no fix is offered.
     /// </summary>
+    public static Task VerifyCodeFixAsync<TCodeFix>(
+        string configuration,
+        string[] sources,
+        string[] fixedSources,
+        params DiagnosticResult[] expected)
+        where TCodeFix : CodeFixProvider, new()
+    {
+        return VerifyCodeFixAsync<TCodeFix>(configuration, sources, fixedSources, [], expected);
+    }
+
+    /// <summary>
+    /// <paramref name="addedFiles"/> are files the fix creates, by file name, next to the sources.
+    /// </summary>
     public static async Task VerifyCodeFixAsync<TCodeFix>(
         string configuration,
         string[] sources,
         string[] fixedSources,
+        (string FileName, string Content)[] addedFiles,
         params DiagnosticResult[] expected)
         where TCodeFix : CodeFixProvider, new()
     {
@@ -84,6 +105,11 @@ internal static class Verifier
 
         AddSources(test.TestState, sources);
         AddSources(test.FixedState, fixedSources);
+        foreach ((string fileName, string content) in addedFiles)
+        {
+            test.FixedState.Sources.Add(($"/0/{fileName}", content));
+        }
+
         test.TestState.AnalyzerConfigFiles.Add(("/.editorconfig", EditorConfig(configuration)));
         test.ExpectedDiagnostics.AddRange(expected);
 
