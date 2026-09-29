@@ -12,7 +12,7 @@ public sealed class TypeMustBeSealedTests
         """;
 
     [Fact]
-    public async Task Analyze_WithUnsealedClass_ReportsTR002()
+    public async Task Analyze_WithUnsealedClass_ReportsTR102()
     {
         const string source = """
             namespace App;

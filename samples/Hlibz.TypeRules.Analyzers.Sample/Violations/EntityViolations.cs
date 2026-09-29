@@ -4,7 +4,7 @@ using Sample.Handlers;
 
 namespace Sample.Violations.Entities;
 
-// TR002: not sealed.
+// TR102: not sealed.
 internal class Order : Entity<int>
 {
     private readonly List<int> _lines = [];
@@ -14,13 +14,13 @@ internal class Order : Entity<int>
     {
     }
 
-    // TR004: a public setter.
+    // TR301: a public setter.
     public string Status { get; set; } = "New";
 
-    // TR005: a mutable collection exposed.
+    // TR302: a mutable collection exposed.
     public List<int> Lines => _lines;
 
-    // TR007: another entity held instead of its id.
+    // TR304: another entity held instead of its id.
     public User? Owner { get; private set; }
 
     // Fine: a private backing collection, and a reference to another entity by id.
@@ -29,7 +29,7 @@ internal class Order : Entity<int>
 
 internal sealed class Invoice : Entity<int>
 {
-    // TR007: entities inside a collection count too, private ones included.
+    // TR304: entities inside a collection count too, private ones included.
     private readonly List<Order> _orders = [];
 
     public Invoice(int id)
@@ -37,10 +37,10 @@ internal sealed class Invoice : Entity<int>
     {
     }
 
-    // TR004: init accessors count as setters unless allow_init = true.
+    // TR301: init accessors count as setters unless allow_init = true.
     public decimal Total { get; init; }
 
-    // TR005: arrays are mutable collections, and internal is visible outside the type.
+    // TR302: arrays are mutable collections, and internal is visible outside the type.
     internal string[] Tags = [];
 
     // Fine: a read-only view.

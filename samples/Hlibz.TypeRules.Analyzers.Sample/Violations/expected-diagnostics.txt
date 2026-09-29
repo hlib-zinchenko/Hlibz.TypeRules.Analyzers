@@ -4,29 +4,40 @@
 
 TR000 broken
 
-TR001 EndpointBase
-TR001 ListOrdersHandler
-TR001 ListUsersEndpoint
+TR101 EndpointBase
+TR101 ListOrdersHandler
+TR101 ListUsersEndpoint
 
-TR002 DeleteUserEndpoint
-TR002 ListOrdersHandler
-TR002 ListUsersEndpoint
-TR002 Order
+TR102 DeleteUserEndpoint
+TR102 ListOrdersHandler
+TR102 ListUsersEndpoint
+TR102 Order
 
-TR003 CancelOrderHandler
-TR003 ListOrdersHandler
-TR003 ShipOrderHandler
+TR103 DeleteUserEndpoint
+TR103 EndpointBase
+TR103 ListOrdersHandler
+TR103 ListUsersEndpoint
 
-TR004 Invoice.Total
-TR004 Order.Status
+TR104 CancelOrderHandler
+TR104 ListOrdersHandler
+TR104 ShipOrderHandler
 
-TR005 Invoice.Tags
-TR005 Order.Lines
+TR201 Money()
+TR201 Percent(decimal)
 
-TR006 DeleteUserEndpoint
-TR006 EndpointBase
-TR006 ListOrdersHandler
-TR006 ListUsersEndpoint
+TR202 Cart
+TR202 Money
 
-TR007 Invoice._orders
-TR007 Order.Owner
+TR301 Invoice.Total
+TR301 Order.Status
+
+TR302 Invoice.Tags
+TR302 Order.Lines
+
+TR303 Address._lines
+TR303 Money._amount
+TR303 Money.Currency
+TR303 Percent
+
+TR304 Invoice._orders
+TR304 Order.Owner

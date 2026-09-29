@@ -7,14 +7,13 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
-using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Hlibz.TypeRules.Analyzers.CodeFixes;
 
 /// <summary>
-/// TR005: changes the member's declared type to its read-only equivalent, e.g.
+/// TR302: changes the member's declared type to its read-only equivalent, e.g.
 /// <c>List&lt;T&gt;</c> to <c>IReadOnlyList&lt;T&gt;</c>. Changing a member's type can break code
 /// that mutates it, so the fix is only offered after applying it speculatively shows no new
 /// compiler errors in any document that references the member.
@@ -76,7 +75,11 @@ public sealed class ExposeReadOnlyCollectionCodeFixProvider : CodeFixProvider
                 cancellationToken)
             .ConfigureAwait(false);
 
-        if (!await CompilesAsCleanlyAsync(document, changed, member, cancellationToken)
+        if (!await SpeculativeCompilation.CompilesAsCleanlyAsync(
+                    document,
+                    changed.Project.Solution,
+                    [member],
+                    cancellationToken)
                 .ConfigureAwait(false))
         {
             return;
@@ -195,67 +198,5 @@ public sealed class ExposeReadOnlyCollectionCodeFixProvider : CodeFixProvider
             && node.Parent is EqualsValueClauseSyntax equalsValue
             && (equalsValue.Parent == declaration
                 || equalsValue.Parent?.Parent == declaration);
-    }
-
-    /// <summary>
-    /// Whether <paramref name="changed"/> introduces no compiler errors, in its own document or in
-    /// any document that references <paramref name="member"/>. Compared by count per document,
-    /// since the change moves spans around.
-    /// </summary>
-    private static async Task<bool> CompilesAsCleanlyAsync(
-        Document original,
-        Document changed,
-        ISymbol member,
-        CancellationToken cancellationToken)
-    {
-        IEnumerable<ReferencedSymbol> references = await SymbolFinder.FindReferencesAsync(
-                member,
-                original.Project.Solution,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        HashSet<DocumentId> documentIds = [original.Id];
-        foreach (ReferencedSymbol referenced in references)
-        {
-            foreach (ReferenceLocation location in referenced.Locations)
-            {
-                documentIds.Add(location.Document.Id);
-            }
-        }
-
-        Solution changedSolution = changed.Project.Solution;
-        foreach (DocumentId documentId in documentIds)
-        {
-            int before = await CountErrorsAsync(
-                    original.Project.Solution.GetDocument(documentId),
-                    cancellationToken)
-                .ConfigureAwait(false);
-            int after = await CountErrorsAsync(
-                    changedSolution.GetDocument(documentId),
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-            if (after > before)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static async Task<int> CountErrorsAsync(
-        Document? document,
-        CancellationToken cancellationToken)
-    {
-        if (document is null
-            || await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false)
-                is not { } semanticModel)
-        {
-            return 0;
-        }
-
-        return semanticModel.GetDiagnostics(cancellationToken: cancellationToken)
-            .Count(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
     }
 }

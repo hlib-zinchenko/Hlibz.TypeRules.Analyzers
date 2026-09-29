@@ -2,7 +2,7 @@
 // interface, in a Handlers namespace.
 namespace Sample.Violations
 {
-    // TR001: public. TR002: not sealed. TR003: no IListOrdersHandler. TR006: wrong namespace.
+    // TR101: public. TR102: not sealed. TR104: no IListOrdersHandler. TR103: wrong namespace.
     public class ListOrdersHandler : IRequestHandler<int, string>
     {
         public string Handle(int request)
@@ -14,7 +14,7 @@ namespace Sample.Violations
 
 namespace Sample.Violations.Handlers
 {
-    // TR003: the companion interface exists, but the handler doesn't implement it
+    // TR104: the companion interface exists, but the handler doesn't implement it
     // (the code fix adds it to the base list).
     internal interface ICancelOrderHandler : IRequestHandler<int, bool>;
 
@@ -26,7 +26,7 @@ namespace Sample.Violations.Handlers
         }
     }
 
-    // TR003: the handler implements an IShipOrderHandler, but that one doesn't extend
+    // TR104: the handler implements an IShipOrderHandler, but that one doesn't extend
     // IRequestHandler, so it's no use for resolving the handler (no code fix).
     internal interface IShipOrderHandler;
 

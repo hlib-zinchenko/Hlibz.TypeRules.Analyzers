@@ -19,3 +19,7 @@ public abstract class Entity<TId>
 
     public TId Id { get; }
 }
+
+public interface IValueObject;
+
+public interface IAggregateRoot;
