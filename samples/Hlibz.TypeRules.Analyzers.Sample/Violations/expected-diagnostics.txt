@@ -1,0 +1,32 @@
+# Every TypeRules diagnostic the sample must report when built with -p:IncludeViolations=true,
+# as "<rule ID> <first quoted name in the message>". verify-violations.sh compares the build's
+# diagnostics with this list: a missing line or an extra diagnostic both fail.
+
+TR000 broken
+
+TR001 EndpointBase
+TR001 ListOrdersHandler
+TR001 ListUsersEndpoint
+
+TR002 DeleteUserEndpoint
+TR002 ListOrdersHandler
+TR002 ListUsersEndpoint
+TR002 Order
+
+TR003 CancelOrderHandler
+TR003 ListOrdersHandler
+TR003 ShipOrderHandler
+
+TR004 Invoice.Total
+TR004 Order.Status
+
+TR005 Invoice.Tags
+TR005 Order.Lines
+
+TR006 DeleteUserEndpoint
+TR006 EndpointBase
+TR006 ListOrdersHandler
+TR006 ListUsersEndpoint
+
+TR007 Invoice._orders
+TR007 Order.Owner

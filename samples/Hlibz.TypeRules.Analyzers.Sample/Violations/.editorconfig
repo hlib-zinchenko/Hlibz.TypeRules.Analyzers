@@ -1,0 +1,6 @@
+# Applies to the violation files only, on top of the sample's own .editorconfig.
+
+[*.cs]
+# TR000: a misspelled type in a namespace that exists is reported, and the rule set ignored.
+typerules.broken.match = T:Sample.IEndpont
+typerules.broken.require_sealed = true

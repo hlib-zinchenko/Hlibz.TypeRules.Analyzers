@@ -3,7 +3,8 @@
   <!--
     Consumes the analyzers the way a real project does: configured in this folder's .editorconfig,
     loaded as an analyzer rather than referenced. Must build clean. With -p:IncludeViolations=true
-    it also compiles Violations/, which must fail with TR001 and TR002 (CI checks both).
+    it also compiles Violations/ (one file per rule set, plus a broken rule set for TR000), which
+    must report exactly Violations/expected-diagnostics.txt: run verify-violations.sh (CI does).
   -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>

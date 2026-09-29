@@ -216,9 +216,15 @@ dotnet test --project tests/Hlibz.TypeRules.Analyzers.Tests
 ```
 
 `samples/Hlibz.TypeRules.Analyzers.Sample` is a small project configured by its own
-`.editorconfig`. It must build clean, and must fail with every rule when built with
-`-p:IncludeViolations=true`; CI checks both. A new rule needs a test class, a page in
-`docs/rules/`, a row in the tables above and a case in the sample's `Violations/`.
+`.editorconfig`, with one violations file per rule set. It must build clean, and built with its
+violations it must report exactly the diagnostics in `Violations/expected-diagnostics.txt`:
+
+```bash
+samples/Hlibz.TypeRules.Analyzers.Sample/verify-violations.sh
+```
+
+CI checks both. A new rule needs a test class, a page in `docs/rules/`, a row in the tables above,
+and a case in the sample's `Violations/` with its line in `expected-diagnostics.txt`.
 
 ## License
 

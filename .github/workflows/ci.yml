@@ -37,26 +37,9 @@ jobs:
         run: dotnet test --project tests/Hlibz.TypeRules.Analyzers.Tests --no-build --configuration Release
 
       # The sample loads the analyzer from a real .editorconfig. It built clean above; with its
-      # violations compiled in, it must fail with TR001 through TR007.
-      - name: Sample reports violations
-        run: |
-          set +e
-          dotnet build samples/Hlibz.TypeRules.Analyzers.Sample --configuration Release \
-            -p:IncludeViolations=true > violations.log 2>&1
-          status=$?
-          set -e
-          cat violations.log
-          if [ "$status" -eq 0 ]; then
-            echo "::error::The sample built with its violations included."
-            exit 1
-          fi
-          grep -q "error TR001" violations.log
-          grep -q "error TR002" violations.log
-          grep -q "error TR003" violations.log
-          grep -q "error TR004" violations.log
-          grep -q "error TR005" violations.log
-          grep -q "error TR006" violations.log
-          grep -q "error TR007" violations.log
+      # violations compiled in, it must report exactly Violations/expected-diagnostics.txt.
+      - name: Sample reports exactly the expected violations
+        run: samples/Hlibz.TypeRules.Analyzers.Sample/verify-violations.sh Release
 
       - name: Pack
         run: dotnet pack src/Hlibz.TypeRules.Analyzers.Package --no-build --configuration Release --output ./artifacts

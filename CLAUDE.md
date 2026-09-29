@@ -21,9 +21,10 @@ dotnet build
 # Run the tests
 dotnet test --project tests/Hlibz.TypeRules.Analyzers.Tests
 
-# End-to-end: the sample must build clean, and must fail with TR001/TR002 with its violations
+# End-to-end: the sample must build clean, and with its violations must report exactly
+# Violations/expected-diagnostics.txt
 dotnet build samples/Hlibz.TypeRules.Analyzers.Sample
-dotnet build samples/Hlibz.TypeRules.Analyzers.Sample -p:IncludeViolations=true
+samples/Hlibz.TypeRules.Analyzers.Sample/verify-violations.sh
 
 # Pack locally
 dotnet pack src/Hlibz.TypeRules.Analyzers.Package -c Release -o ./nupkg
@@ -112,8 +113,13 @@ as the fixed sources; files a fix adds go in `addedFiles` by file name. Test nam
 
 `samples/Hlibz.TypeRules.Analyzers.Sample` references the analyzer project as an analyzer, is
 configured by its own (non-root) `.editorconfig`, and covers what unit tests can't: real
-`.editorconfig` loading and build integration. CI builds it clean, then with
-`-p:IncludeViolations=true` and checks TR001 and TR002 are reported.
+`.editorconfig` loading and build integration. It must build clean. With
+`-p:IncludeViolations=true` it also compiles `Violations/`: one file per rule set, each breaking
+every rule that set configures (plus "fine" cases that must stay silent), and a
+`Violations/.editorconfig` with a misspelled type for TR000. `verify-violations.sh` compares the
+reported diagnostics, as `<ID> <first quoted name>`, with `Violations/expected-diagnostics.txt`
+and fails on anything missing or extra, and on any C# compile error in the violation files
+(the compiler doesn't run analyzers on code that doesn't compile). CI runs it.
 
 ## Adding a rule
 
@@ -123,7 +129,7 @@ configured by its own (non-root) `.editorconfig`, and covers what unit tests can
 3. Add the check to `TypeRulesAnalyzer`, and a code fix in the CodeFixes project if one is safe.
 4. Add the ID to `AnalyzerReleases.Unshipped.md` (RS2008 fails the build otherwise).
 5. Tests, `docs/rules/<ID>.md`, README's rules and configuration tables, and a case in the
-   sample's `Violations/`.
+   sample's `Violations/` with its line in `Violations/expected-diagnostics.txt`.
 
 ## Releasing
 
