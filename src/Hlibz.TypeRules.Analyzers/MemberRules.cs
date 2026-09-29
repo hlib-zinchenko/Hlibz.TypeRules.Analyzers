@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Hlibz.TypeRules.Analyzers;
 
 /// <summary>
-/// TR004 and TR005: checks on the properties and fields a matched type declares itself. Inherited
+/// TR301 and TR302: checks on the properties and fields a matched type declares itself. Inherited
 /// members are checked on the type that declares them (if it's matched), overrides and explicit
 /// interface implementations not at all, since their shape is dictated by what they implement.
 /// </summary>
@@ -17,7 +17,7 @@ internal static class MemberRules
 {
     /// <summary>
     /// Diagnostic property holding the combined maximum setter <see cref="AccessScope"/> (as an
-    /// integer) for TR004.
+    /// integer) for TR301.
     /// </summary>
     public const string MaxSetterAccessibilityProperty = "MaxSetterAccessibility";
 
@@ -160,7 +160,7 @@ internal static class MemberRules
     }
 
     /// <summary>
-    /// TR007: the state a matched type stores (explicit fields of any accessibility, and
+    /// TR304: the state a matched type stores (explicit fields of any accessibility, and
     /// auto-properties through their backing fields) must not hold a type of a rule set it
     /// forbids. Computed properties are skipped: they store nothing, and whatever they read from
     /// is a field that's checked itself.

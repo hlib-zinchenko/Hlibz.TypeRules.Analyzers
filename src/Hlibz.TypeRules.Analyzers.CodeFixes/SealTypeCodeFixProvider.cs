@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.FindSymbols;
 namespace Hlibz.TypeRules.Analyzers.CodeFixes;
 
 /// <summary>
-/// TR002: adds <c>sealed</c> to the type. Only offered when sealing can't break the build: nothing
+/// TR102: adds <c>sealed</c> to the type. Only offered when sealing can't break the build: nothing
 /// in the solution derives from the type, and it declares no new virtual (CS0549) or protected
 /// (CS0628) members.
 /// </summary>

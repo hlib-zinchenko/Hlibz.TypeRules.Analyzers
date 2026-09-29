@@ -12,7 +12,7 @@ public sealed class AccessibilityExceedsMaximumTests
         """;
 
     [Fact]
-    public async Task Analyze_WithPublicImplementation_ReportsTR001()
+    public async Task Analyze_WithPublicImplementation_ReportsTR101()
     {
         const string source = """
             namespace App;
@@ -115,7 +115,7 @@ public sealed class AccessibilityExceedsMaximumTests
     }
 
     [Fact]
-    public async Task Analyze_WithProtectedNestedTypeAndInternalMaximum_ReportsTR001()
+    public async Task Analyze_WithProtectedNestedTypeAndInternalMaximum_ReportsTR101()
     {
         const string source = """
             namespace App;
@@ -135,7 +135,7 @@ public sealed class AccessibilityExceedsMaximumTests
     }
 
     [Fact]
-    public async Task Analyze_WithPublicRecordStruct_ReportsTR001()
+    public async Task Analyze_WithPublicRecordStruct_ReportsTR101()
     {
         const string source = """
             namespace App;

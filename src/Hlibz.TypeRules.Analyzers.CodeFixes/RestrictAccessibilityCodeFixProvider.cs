@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.Editing;
 namespace Hlibz.TypeRules.Analyzers.CodeFixes;
 
 /// <summary>
-/// TR001: sets the type's declared accessibility to the most permissive level its rule sets
+/// TR101: sets the type's declared accessibility to the most permissive level its rule sets
 /// allow, on every partial declaration that states one.
 /// </summary>
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(RestrictAccessibilityCodeFixProvider))]

@@ -62,13 +62,14 @@ needs `--project <path>` rather than a bare directory argument.
   accessibility is only partially ordered (`protected` vs `internal`). "Exceeds the maximum" is
   `IsWithin` (a subset check), effective accessibility is the intersection along the containing
   types, and several rule sets' maximums combine by intersection too.
-- **Code fixes only fix when it's safe.** The TR001 fix picks the most permissive level within the
+- **Code fixes only fix when it's safe.** The TR101 fix picks the most permissive level within the
   maximum that's legal where the type is declared (no protected levels inside structs, static or
-  sealed classes); the TR002 fix isn't offered when anything derives from the type or it declares
-  new virtual/protected members; the TR003 fix only acts when the companion is missing or
-  exists and is valid; the TR004 fix skips required, interface-implementing, virtual and
-  getter-less properties; the TR005 fix only registers when the change still compiles. Tests cover each "no fix offered" case.
-- **`CompanionInterfaces`** (TR003) holds the companion lookup (`I` + name, same arity, same
+  sealed classes); the TR102 fix isn't offered when anything derives from the type or it declares
+  new virtual/protected members; the TR104 fix only acts when the companion is missing or
+  exists and is valid; the TR301 fix skips required, interface-implementing, virtual and
+  getter-less properties; the TR201, TR302 and TR303 fixes only register when the change still
+  compiles. Tests cover each "no fix offered" case.
+- **`CompanionInterfaces`** (TR104) holds the companion lookup (`I` + name, same arity, same
   namespace or containing type) shared by the analyzer and `CompanionInterfaceCodeFixProvider`,
   and passes the fix its state (`Missing`/`NotImplemented`; absent = no safe fix) and the matched
   interfaces' documentation IDs as diagnostic properties. The fix generates `IFoo.cs` through
@@ -77,30 +78,46 @@ needs `--project <path>` rather than a bare directory argument.
   drops added documents, so it re-resolves each type by documentation ID and applies the fixes
   one after another. Roslyn 4.8 has `ImportAdder.AddImportsAsync` with
   `Simplifier.AddImportsAnnotation`, not the newer `AddImportsFromSymbolAnnotationAsync`.
-- **`MemberRules`** (TR004, TR005) checks the properties and fields a matched type declares,
+- **`MemberRules`** (TR301, TR302) checks the properties and fields a matched type declares,
   skipping overrides and explicit interface implementations. Generated partial parts need no
   check of their own: with `GeneratedCodeAnalysisFlags.None`, the analyzer driver drops
-  diagnostics located in generated code (a test pins this). `MutableCollections` is TR005's
+  diagnostics located in generated code (a test pins this). `MutableCollections` is TR302's
   explicit list of mutable types (not "implements ICollection<T>": immutable collections do too)
   and their read-only equivalents, shared with the fix.
-- **The TR005 fix compiles speculatively.** Changing a member's type can break callers, so
-  `ExposeReadOnlyCollectionCodeFixProvider` applies the change and compares error counts in every
-  document referencing the member (`SymbolFinder.FindReferencesAsync`) before registering.
+- **The TR201, TR302 and TR303 fixes compile speculatively.** Changing a member's type, making it
+  readonly or restricting a constructor can break callers, so these fixes apply the change and
+  call `SpeculativeCompilation.CompilesAsCleanlyAsync`, which compares error counts in every
+  document declaring or referencing the given symbols (`SymbolFinder.FindReferencesAsync`) before
+  registering. The TR201 fix also passes the type for a parameterless constructor, since `new()`
+  constraints call it without referencing it.
+- **`Immutability`** (TR303) checks instance state the type declares: non-readonly explicit
+  fields, `set` accessors (`init` is fine), stored mutable collections of any accessibility (via
+  `MutableCollections`, including auto-property backing fields), and non-readonly structs. It's
+  shallow on purpose. A `Problem` diagnostic property tells `MakeImmutableCodeFixProvider` which
+  of the four it is.
+- **TR201** (`max_constructor_accessibility`) and **TR202** (`equality = value | identity`) live
+  in `TypeRulesAnalyzer`. TR201 skips abstract types, a struct's implicit parameterless
+  constructor and a record's implicit copy constructor, and reports the implicit default
+  constructor and primary constructors on the type. Value equality is a record, a struct, or an
+  `Equals(object)` override anywhere below `object`; identity forbids records and structs.
 - Code-fix helpers shared across fixes: `Accessibilities` (where protected levels are legal) and
   `DocumentCleanup` (imports, simplification, formatting, line-ending normalization).
-- **`Configuration/NamespacePattern`** (TR006) matches namespaces segment by segment: `*` is one
-  segment, `**` any number including none (so `**` alone matches the global namespace). TR006
+- **`Configuration/NamespacePattern`** (TR103) matches namespaces segment by segment: `*` is one
+  segment, `**` any number including none (so `**` alone matches the global namespace). TR103
   reports once per violated rule set, since namespace requirements can't be combined the way
   accessibility maximums are, and has no code fix: moving a type means moving callers and the
   file, which the IDE's own refactoring does.
-- **TR007** (`MemberRules.AnalyzeReferences`) checks stored state only: explicit fields of any
+- **TR304** (`MemberRules.AnalyzeReferences`) checks stored state only: explicit fields of any
   accessibility, and auto-properties through their implicit backing fields (which also covers
   positional records). Computed properties are skipped, since the fields they read are checked.
   `FindHeldType` searches array elements and type arguments recursively. `forbid_member_types`
   names other rule sets, resolved through `TypeRulesConfiguration.Find`; the parser collects
   every forbidden target first, because a target only needs `match`, not a constraint.
-- **Rule IDs `TR000`–`TR007` are public contract.** Never renumber or reuse one. Descriptors live
-  in `Descriptors.cs`, with help links to `docs/rules/<ID>.md`.
+- **Rule IDs are grouped in blocks and are public contract.** TR0xx configuration, TR1xx type
+  declaration (accessibility, sealed, namespace, companion interface), TR2xx construction and
+  equality, TR3xx state (setters, collections, immutability, held references). They were
+  renumbered into these blocks before the first release; once a release ships, never renumber or
+  reuse one. Descriptors live in `Descriptors.cs`, with help links to `docs/rules/<ID>.md`.
 
 ## Tests
 
@@ -123,7 +140,8 @@ and fails on anything missing or extra, and on any C# compile error in the viola
 
 ## Adding a rule
 
-1. Take the next free ID and add a descriptor to `Descriptors.cs` and `SupportedDiagnostics`.
+1. Take the next free ID in the rule's block (TR1xx/TR2xx/TR3xx; start a new block for a new
+   group) and add a descriptor to `Descriptors.cs` and `SupportedDiagnostics`.
 2. Add the option(s) to `ConfigurationParser` (`KnownOptions`, parsing, the "sets no constraint"
    check) and to `TypeRuleSet`.
 3. Add the check to `TypeRulesAnalyzer`, and a code fix in the CodeFixes project if one is safe.

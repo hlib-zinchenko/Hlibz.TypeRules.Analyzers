@@ -13,7 +13,7 @@ public sealed class CompanionInterfaceMissingTests
         typerules.handlers.companion_interface = true
         """;
 
-    /// <summary>TR003 for <c>GetUserHandler</c>, marked <c>{|#0:...|}</c>.</summary>
+    /// <summary>TR104 for <c>GetUserHandler</c>, marked <c>{|#0:...|}</c>.</summary>
     private static DiagnosticResult GetUserHandlerDiagnostic()
     {
         return Diagnostic(Descriptors.CompanionInterfaceMissing)
@@ -38,7 +38,7 @@ public sealed class CompanionInterfaceMissingTests
     }
 
     [Fact]
-    public async Task Analyze_WithoutCompanion_ReportsTR003()
+    public async Task Analyze_WithoutCompanion_ReportsTR104()
     {
         const string source = """
             using App.Contracts;
@@ -55,7 +55,7 @@ public sealed class CompanionInterfaceMissingTests
     }
 
     [Fact]
-    public async Task Analyze_WithCompanionInAnotherNamespace_ReportsTR003()
+    public async Task Analyze_WithCompanionInAnotherNamespace_ReportsTR104()
     {
         const string source = """
             using App.Contracts;

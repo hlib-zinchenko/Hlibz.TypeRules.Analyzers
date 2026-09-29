@@ -21,7 +21,10 @@ internal sealed class TypeRuleSet
         bool readOnlyCollections,
         ImmutableArray<NamespacePattern> namespacePatterns,
         ImmutableArray<string> forbiddenMemberRuleSets,
-        bool allowSelfReferences)
+        bool allowSelfReferences,
+        bool requireImmutable,
+        Equality? equality,
+        AccessScope? maxConstructorAccessibility)
     {
         Name = name;
         MatchedTypes = matchedTypes;
@@ -34,6 +37,9 @@ internal sealed class TypeRuleSet
         NamespacePatterns = namespacePatterns;
         ForbiddenMemberRuleSets = forbiddenMemberRuleSets;
         AllowSelfReferences = allowSelfReferences;
+        RequireImmutable = requireImmutable;
+        Equality = equality;
+        MaxConstructorAccessibility = maxConstructorAccessibility;
     }
 
     public string Name { get; }
@@ -68,6 +74,13 @@ internal sealed class TypeRuleSet
     /// Whether a type may still store its own type (<c>Category.Parent</c>) when it's forbidden.
     /// </summary>
     public bool AllowSelfReferences { get; }
+
+    public bool RequireImmutable { get; }
+
+    /// <summary>The equality matched types must have, or null for no requirement.</summary>
+    public Equality? Equality { get; }
+
+    public AccessScope? MaxConstructorAccessibility { get; }
 
     /// <summary>
     /// Whether <paramref name="type"/> belongs to this rule set: it's one of the matched types

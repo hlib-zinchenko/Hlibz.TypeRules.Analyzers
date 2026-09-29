@@ -26,7 +26,7 @@ internal enum MutableCollectionKind
 }
 
 /// <summary>
-/// TR005's definition of a mutable collection. Deliberately a list of known types rather than
+/// TR302's definition of a mutable collection. Deliberately a list of known types rather than
 /// "implements ICollection&lt;T&gt;": immutable and read-only collections (ImmutableArray,
 /// ReadOnlyCollection) implement IList&lt;T&gt; too, with mutators that throw.
 /// </summary>

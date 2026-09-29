@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Hlibz.TypeRules.Analyzers.CodeFixes;
 
 /// <summary>
-/// TR004: restricts the set/init accessor to the most permissive level the rule sets allow, e.g.
+/// TR301: restricts the set/init accessor to the most permissive level the rule sets allow, e.g.
 /// <c>{ get; set; }</c> to <c>{ get; private set; }</c>. Not offered where an accessor modifier
 /// would break the build: required members (CS9032), interface implementations, virtual,
 /// abstract or override members, properties with no getter (CS0276), and accessors with no

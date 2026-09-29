@@ -17,3 +17,12 @@ typerules.entities.require_sealed = true
 typerules.entities.max_setter_accessibility = private
 typerules.entities.readonly_collections = true
 typerules.entities.forbid_member_types = entities
+
+typerules.value-objects.match = T:Sample.IValueObject
+typerules.value-objects.require_sealed = true
+typerules.value-objects.require_immutable = true
+typerules.value-objects.equality = value
+typerules.value-objects.max_constructor_accessibility = private
+
+typerules.aggregates.match = T:Sample.IAggregateRoot
+typerules.aggregates.equality = identity

@@ -3,18 +3,26 @@ using Microsoft.CodeAnalysis;
 namespace Hlibz.TypeRules.Analyzers;
 
 /// <summary>
-/// Every diagnostic the package reports. IDs are public contract: never renumber or reuse one.
+/// Every diagnostic the package reports, grouped in blocks: TR0xx configuration, TR1xx the type's
+/// declaration, TR2xx construction and equality, TR3xx stored state. IDs are public contract:
+/// never renumber or reuse one.
 /// </summary>
 internal static class Descriptors
 {
     public const string InvalidConfigurationId = "TR000";
-    public const string AccessibilityExceedsMaximumId = "TR001";
-    public const string TypeMustBeSealedId = "TR002";
-    public const string CompanionInterfaceMissingId = "TR003";
-    public const string SetterExceedsMaximumId = "TR004";
-    public const string MutableCollectionExposedId = "TR005";
-    public const string WrongNamespaceId = "TR006";
-    public const string ForbiddenMemberTypeId = "TR007";
+
+    public const string AccessibilityExceedsMaximumId = "TR101";
+    public const string TypeMustBeSealedId = "TR102";
+    public const string WrongNamespaceId = "TR103";
+    public const string CompanionInterfaceMissingId = "TR104";
+
+    public const string ConstructorExceedsMaximumId = "TR201";
+    public const string WrongEqualityId = "TR202";
+
+    public const string SetterExceedsMaximumId = "TR301";
+    public const string MutableCollectionExposedId = "TR302";
+    public const string TypeMustBeImmutableId = "TR303";
+    public const string ForbiddenMemberTypeId = "TR304";
 
     public static readonly DiagnosticDescriptor InvalidConfiguration = new(
         InvalidConfigurationId,
@@ -26,6 +34,8 @@ internal static class Descriptors
         description: "A typerules.* key in .editorconfig or .globalconfig could not be applied. "
             + "An invalid rule set is ignored entirely, so it doesn't half-apply.",
         helpLinkUri: HelpLink(InvalidConfigurationId));
+
+    // TR1xx: the type's declaration.
 
     public static readonly DiagnosticDescriptor AccessibilityExceedsMaximum = new(
         AccessibilityExceedsMaximumId,
@@ -49,6 +59,19 @@ internal static class Descriptors
             + "types must be sealed when the rule set sets require_sealed = true.",
         helpLinkUri: HelpLink(TypeMustBeSealedId));
 
+    public static readonly DiagnosticDescriptor WrongNamespace = new(
+        WrongNamespaceId,
+        title: "Type is declared in the wrong namespace",
+        messageFormat: "'{0}' is declared in {1}, but rule set '{2}' requires a namespace "
+            + "matching {3}",
+        category: "Design",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Types that inherit from or implement a rule set's matched types must be "
+            + "declared in a namespace matching one of the rule set's namespace_pattern "
+            + "alternatives.",
+        helpLinkUri: HelpLink(WrongNamespaceId));
+
     public static readonly DiagnosticDescriptor CompanionInterfaceMissing = new(
         CompanionInterfaceMissingId,
         title: "Type must implement its companion interface",
@@ -63,6 +86,38 @@ internal static class Descriptors
             + "companion_interface = true. Consumers then depend on IFoo, which is what "
             + "reflection-based dependency injection registers.",
         helpLinkUri: HelpLink(CompanionInterfaceMissingId));
+
+    // TR2xx: how instances are created and compared.
+
+    public static readonly DiagnosticDescriptor ConstructorExceedsMaximum = new(
+        ConstructorExceedsMaximumId,
+        title: "Constructor is more accessible than its rule set allows",
+        messageFormat: "Constructor '{0}' is {1}, but rule set {2} allows at most {3}",
+        category: "Design",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Constructors of non-abstract types that inherit from or implement a rule "
+            + "set's matched types, including the implicit default constructor and primary "
+            + "constructors, must not be accessible from more places than the rule set's "
+            + "max_constructor_accessibility allows. Create instances through factory methods "
+            + "that enforce invariants instead.",
+        helpLinkUri: HelpLink(ConstructorExceedsMaximumId));
+
+    public static readonly DiagnosticDescriptor WrongEquality = new(
+        WrongEqualityId,
+        title: "Type has the wrong equality semantics",
+        messageFormat: "'{0}' {1}, but rule set {2} requires {3} equality",
+        category: "Design",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Types that inherit from or implement a rule set's matched types must compare "
+            + "the way the rule set's equality option says. With equality = value (value "
+            + "objects), they must be records or structs, or override Equals(object) themselves "
+            + "or through a base class. With equality = identity (entities), they must be classes "
+            + "that aren't records, since a record compares all its state rather than its id.",
+        helpLinkUri: HelpLink(WrongEqualityId));
+
+    // TR3xx: the state a type stores, and who can change it.
 
     public static readonly DiagnosticDescriptor SetterExceedsMaximum = new(
         SetterExceedsMaximumId,
@@ -91,18 +146,18 @@ internal static class Descriptors
             + "IReadOnlyDictionary<TKey, TValue> over a private collection instead.",
         helpLinkUri: HelpLink(MutableCollectionExposedId));
 
-    public static readonly DiagnosticDescriptor WrongNamespace = new(
-        WrongNamespaceId,
-        title: "Type is declared in the wrong namespace",
-        messageFormat: "'{0}' is declared in {1}, but rule set '{2}' requires a namespace "
-            + "matching {3}",
+    public static readonly DiagnosticDescriptor TypeMustBeImmutable = new(
+        TypeMustBeImmutableId,
+        title: "Type must be immutable",
+        messageFormat: "'{0}' {1}, but rule set {2} requires immutable types",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "Types that inherit from or implement a rule set's matched types must be "
-            + "declared in a namespace matching one of the rule set's namespace_pattern "
-            + "alternatives.",
-        helpLinkUri: HelpLink(WrongNamespaceId));
+        description: "Types that inherit from or implement a rule set's matched types can't change "
+            + "after construction when the rule set sets require_immutable = true: instance "
+            + "fields must be readonly, properties can't have set accessors (init is fine), "
+            + "stored state can't be a mutable collection, and structs must be readonly structs.",
+        helpLinkUri: HelpLink(TypeMustBeImmutableId));
 
     public static readonly DiagnosticDescriptor ForbiddenMemberType = new(
         ForbiddenMemberTypeId,

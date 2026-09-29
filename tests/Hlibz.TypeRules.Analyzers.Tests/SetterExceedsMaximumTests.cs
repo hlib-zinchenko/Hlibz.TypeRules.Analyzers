@@ -12,7 +12,7 @@ public sealed class SetterExceedsMaximumTests
         """;
 
     [Fact]
-    public async Task Analyze_WithPublicSetter_ReportsTR004()
+    public async Task Analyze_WithPublicSetter_ReportsTR301()
     {
         const string source = """
             namespace App;
