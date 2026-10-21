@@ -11,6 +11,8 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <!-- Pins a patched version of a vulnerable transitive dependency, see Directory.Packages.props. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>

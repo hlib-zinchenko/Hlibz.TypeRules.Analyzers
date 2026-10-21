@@ -1,6 +1,7 @@
 using Hlibz.TypeRules.Analyzers.CodeFixes;
 
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.CodeAnalysis.Text;
 
 using static Hlibz.TypeRules.Analyzers.Tests.Verifier;
 
@@ -203,6 +204,82 @@ public sealed class CompanionInterfaceMissingTests
                     "IGetOrderHandler",
                     "'IRequestHandler'",
                     "'handlers'"));
+    }
+
+    [Fact]
+    public async Task FixAll_WithNullEquivalenceKey_FixesOnlyDiagnosticsThatHaveAFix()
+    {
+        string[] sources =
+        [
+            // No safe fix: the companion exists but doesn't extend IRequestHandler.
+            """
+            using App.Contracts;
+
+            namespace App.Users;
+
+            public interface IGetUserHandler;
+
+            internal sealed class GetUserHandler : IGetUserHandler, IRequestHandler<int, string> { }
+            """,
+            """
+            using App.Contracts;
+
+            namespace App.Orders;
+
+            internal sealed class GetOrderHandler : IRequestHandler<long, string> { }
+            """,
+            """
+            using App.Contracts;
+
+            namespace App.Cities;
+
+            public interface IGetCityHandler : IRequestHandler<int, string>;
+
+            internal sealed class GetCityHandler : IRequestHandler<int, string> { }
+            """,
+        ];
+
+        // dotnet format passes a null key when the first diagnostic it sees has no fix.
+        Dictionary<string, SourceText> documents =
+            await FixAllAsync<CompanionInterfaceCodeFixProvider>(Handlers, sources, null);
+
+        Assert.Equal(
+            ["Contracts.cs", "IGetOrderHandler.cs", "Test0.cs", "Test1.cs", "Test2.cs"],
+            documents.Keys.Order());
+        Assert.Equal(sources[0], documents["Test0.cs"].ToString());
+        Assert.Equal(
+            """
+            using App.Contracts;
+
+            namespace App.Orders;
+
+            internal sealed class GetOrderHandler : IGetOrderHandler { }
+            """,
+            documents["Test1.cs"].ToString());
+        Assert.Equal(
+            """
+            using App.Contracts;
+
+            namespace App.Orders;
+
+            public interface IGetOrderHandler : IRequestHandler<long, string>;
+
+            """,
+            documents["IGetOrderHandler.cs"].ToString());
+        Assert.Equal(
+            """
+            using App.Contracts;
+
+            namespace App.Cities;
+
+            public interface IGetCityHandler : IRequestHandler<int, string>;
+
+            internal sealed class GetCityHandler : IRequestHandler<int, string>, IGetCityHandler { }
+            """,
+            documents["Test2.cs"].ToString());
+
+        // The new file takes the source file's encoding: UTF-8 without a BOM here.
+        Assert.Empty(documents["IGetOrderHandler.cs"].Encoding!.GetPreamble());
     }
 
     [Fact]

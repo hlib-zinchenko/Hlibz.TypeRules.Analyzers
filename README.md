@@ -100,20 +100,20 @@ created and compared, TR3xx the state a type stores.
 
 | ID | Rule | Option | Code fix |
 |---|---|---|---|
-| [TR000](docs/rules/TR000.md) | TypeRules configuration is invalid | — | — |
+| [TR000](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR000.md) | TypeRules configuration is invalid | — | — |
 | **Type declaration** | | | |
-| [TR101](docs/rules/TR101.md) | Type is more accessible than its rule set allows | `max_accessibility` | Change the access modifier |
-| [TR102](docs/rules/TR102.md) | Type must be sealed | `require_sealed` | Add `sealed` |
-| [TR103](docs/rules/TR103.md) | Type is declared in the wrong namespace | `namespace_pattern` | — (use the IDE's *Move to namespace*) |
-| [TR104](docs/rules/TR104.md) | Type must implement its companion interface (`Foo` → `IFoo`) | `companion_interface` | Generate `IFoo.cs`, or implement an existing `IFoo` |
+| [TR101](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR101.md) | Type is more accessible than its rule set allows | `max_accessibility` | Change the access modifier |
+| [TR102](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR102.md) | Type must be sealed | `require_sealed` | Add `sealed` |
+| [TR103](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR103.md) | Type is declared in the wrong namespace | `namespace_pattern` | — (use the IDE's *Move to namespace*) |
+| [TR104](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR104.md) | Type must implement its companion interface (`Foo` → `IFoo`) | `companion_interface` | Generate `IFoo.cs`, or implement an existing `IFoo` |
 | **Construction and equality** | | | |
-| [TR201](docs/rules/TR201.md) | Constructor is more accessible than its rule set allows | `max_constructor_accessibility` | Change the access modifier |
-| [TR202](docs/rules/TR202.md) | Type has the wrong equality semantics: value objects compare by value, entities by identity | `equality` | — |
+| [TR201](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR201.md) | Constructor is more accessible than its rule set allows | `max_constructor_accessibility` | Change the access modifier |
+| [TR202](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR202.md) | Type has the wrong equality semantics: value objects compare by value, entities by identity | `equality` | — |
 | **State** | | | |
-| [TR301](docs/rules/TR301.md) | Setter is more accessible than its rule set allows | `max_setter_accessibility` | Restrict the accessor, e.g. `private set` |
-| [TR302](docs/rules/TR302.md) | Mutable collection (`List<T>`, arrays, ...) is exposed | `readonly_collections` | Expose `IReadOnlyList<T>` & co. |
-| [TR303](docs/rules/TR303.md) | Type must be immutable: readonly fields, no setters, no mutable collections, readonly structs | `require_immutable` | Add `readonly`, remove the setter or make it `init` |
-| [TR304](docs/rules/TR304.md) | Type holds a reference to a forbidden type, e.g. one aggregate root holding another | `forbid_member_types` | — |
+| [TR301](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR301.md) | Setter is more accessible than its rule set allows | `max_setter_accessibility` | Restrict the accessor, e.g. `private set` |
+| [TR302](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR302.md) | Mutable collection (`List<T>`, arrays, ...) is exposed | `readonly_collections` | Expose `IReadOnlyList<T>` & co. |
+| [TR303](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR303.md) | Type must be immutable: readonly fields, no setters, no mutable collections, readonly structs | `require_immutable` | Add `readonly`, remove the setter or make it `init` |
+| [TR304](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR304.md) | Type holds a reference to a forbidden type, e.g. one aggregate root holding another | `forbid_member_types` | — |
 
 All rules are warnings by default. With `TreatWarningsAsErrors`, they fail the build. Change a
 rule's severity the usual way:
@@ -137,6 +137,21 @@ and the fix is left out, rather than trading one error for another. For example:
 
 Every fix supports **Fix All** in a document, project or solution, including the TR104 fix, which
 creates new files.
+
+From the command line, `dotnet format analyzers` applies the same fixes:
+
+```bash
+dotnet format analyzers --diagnostics TR101 --severity warn
+```
+
+- **Fix one rule ID per run.** After one rule's fixes, the next rule's diagnostics in the same
+  run point at code that has moved, and aren't fixed.
+- **Rerun until nothing changes.** `dotnet format` applies one kind of fix per rule ID per run,
+  so a type with several TR303 problems (a mutable field and a setter) may need more runs.
+- **Check the project file after TR104.** `dotnet format` adds the generated `IFoo.cs` to the
+  `.csproj` as an explicit `<Compile Include>`, which SDK-style projects already include, so the
+  next build fails with NETSDK1022. Delete that item.
+- `dotnet format` has no `-p` option: pass MSBuild properties as environment variables.
 
 ## Configuration
 
@@ -179,9 +194,10 @@ and `Entity<int>` alike.
 
 - **Classes, structs and records** that inherit from or implement a matched type. Interfaces that
   extend a matched interface are not checked, and neither is the matched type itself.
-- **Abstract classes are checked by TR101, TR103, TR202 and TR303** (an abstract endpoint base is
-  still an endpoint) but not by TR102, TR104 or TR201: they can't be sealed, nothing resolves them
-  from DI, and their constructors exist for derived types.
+- **Abstract classes are checked by every rule except TR102, TR104 and TR201.** An abstract
+  endpoint base is still an endpoint, and an abstract entity base's setters are still the
+  entity's. But an abstract class can't be sealed, nothing resolves it from DI, and its
+  constructors exist for derived types.
 - **Effective accessibility** (TR101, TR201, TR301, TR302): a `public` member of an `internal`
   class is internal.
 - **Members** (TR301, TR302, TR303, TR304) are checked on the type that declares them.
@@ -203,7 +219,7 @@ it's declared in *does* exist, in which case the name is most likely a typo and 
 
 ### Invalid configuration
 
-Anything TypeRules can't apply is reported as [TR000](docs/rules/TR000.md): unknown options, bad
+Anything TypeRules can't apply is reported as [TR000](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR000.md): unknown options, bad
 values, types that don't resolve, types nothing can inherit from. A rule set with a problem is
 ignored entirely rather than half-applied. TR000 has no source location, because it points at
 configuration, not code, so it appears in build output rather than on a line in the editor.

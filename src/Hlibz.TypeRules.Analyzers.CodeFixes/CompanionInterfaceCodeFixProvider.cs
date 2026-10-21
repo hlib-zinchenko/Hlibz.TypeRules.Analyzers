@@ -291,6 +291,19 @@ public sealed class CompanionInterfaceCodeFixProvider : CodeFixProvider
                 ensureFinalLineBreak: true,
                 cancellationToken)
             .ConfigureAwait(false);
+
+        // Text built from a syntax node has no encoding, so whatever saves the new file would pick
+        // its own (dotnet format writes a BOM). Use the source file's.
+        if (originalText.Encoding is not null)
+        {
+            SourceText addedText = await added.GetTextAsync(cancellationToken)
+                .ConfigureAwait(false);
+            added = added.WithText(SourceText.From(
+                addedText.ToString(),
+                originalText.Encoding,
+                originalText.ChecksumAlgorithm));
+        }
+
         return added.Project.Solution;
     }
 
@@ -455,6 +468,8 @@ public sealed class CompanionInterfaceCodeFixProvider : CodeFixProvider
     /// Applies the fixes one at a time, each against the solution the previous one produced.
     /// Every type is found again by its documentation ID rather than by position, because earlier
     /// fixes add using directives and files that move or replace what the diagnostics point at.
+    /// A null equivalence key fixes both kinds: <c>dotnet format</c> passes the key of the first
+    /// diagnostic's fix, and null when that diagnostic has no fix.
     /// </summary>
     private sealed class CompanionFixAllProvider : FixAllProvider
     {
@@ -467,9 +482,18 @@ public sealed class CompanionInterfaceCodeFixProvider : CodeFixProvider
 
         public override Task<CodeAction?> GetFixAsync(FixAllContext fixAllContext)
         {
-            string title = fixAllContext.CodeActionEquivalenceKey == ImplementKey
-                ? "Implement companion interfaces"
-                : "Extract companion interfaces";
+            string? title = fixAllContext.CodeActionEquivalenceKey switch
+            {
+                ImplementKey => "Implement companion interfaces",
+                ExtractKey => "Extract companion interfaces",
+                null => "Add companion interfaces",
+                _ => null,
+            };
+
+            if (title is null)
+            {
+                return Task.FromResult<CodeAction?>(null);
+            }
 
             return Task.FromResult<CodeAction?>(CodeAction.Create(
                 title,
@@ -507,7 +531,11 @@ public sealed class CompanionInterfaceCodeFixProvider : CodeFixProvider
 
             foreach (Diagnostic diagnostic in diagnostics)
             {
-                if (GetEquivalenceKey(diagnostic) != context.CodeActionEquivalenceKey
+                // A diagnostic without a key has no safe fix, whatever key Fix All was asked for.
+                string? key = GetEquivalenceKey(diagnostic);
+                if (key is null
+                    || (context.CodeActionEquivalenceKey is not null
+                        && key != context.CodeActionEquivalenceKey)
                     || solution.GetDocument(diagnostic.Location.SourceTree) is not { } document)
                 {
                     continue;

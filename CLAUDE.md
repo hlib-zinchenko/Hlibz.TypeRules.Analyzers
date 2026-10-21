@@ -76,8 +76,11 @@ needs `--project <path>` rather than a bare directory argument.
   `ImportAdder`/`Simplifier`/`Formatter`, then normalizes to the source file's line endings,
   because those APIs use the workspace default. It has its own `FixAllProvider`: the batch fixer
   drops added documents, so it re-resolves each type by documentation ID and applies the fixes
-  one after another. Roslyn 4.8 has `ImportAdder.AddImportsAsync` with
-  `Simplifier.AddImportsAnnotation`, not the newer `AddImportsFromSymbolAnnotationAsync`.
+  one after another. It never touches a diagnostic without a state, and a null equivalence key
+  fixes both kinds: `dotnet format` passes the first diagnostic's key, null when that one has no
+  fix. The generated file takes the source file's encoding. Roslyn 4.8 has
+  `ImportAdder.AddImportsAsync` with `Simplifier.AddImportsAnnotation`, not the newer
+  `AddImportsFromSymbolAnnotationAsync`.
 - **`MemberRules`** (TR301, TR302) checks the properties and fields a matched type declares,
   skipping overrides and explicit interface implementations. Generated partial parts need no
   check of their own: with `GeneratedCodeAnalysisFlags.None`, the analyzer driver drops
@@ -125,7 +128,9 @@ needs `--project <path>` rather than a bare directory argument.
 takes configuration as `.editorconfig` lines and adds `Verifier.Contracts` (the `App.*` base types
 the tests match on) to every compilation. Diagnostics are marked `{|#0:Name|}` and expected with
 `.WithLocation(0)`; TR000 has no location. To assert that no fix is offered, pass the same sources
-as the fixed sources; files a fix adds go in `addedFiles` by file name. Test names follow `Subject_WithCondition_ExpectedOutcome`, e.g.
+as the fixed sources; files a fix adds go in `addedFiles` by file name. The framework's own Fix All
+always passes a registered fix's equivalence key; `Verifier.FixAllAsync` runs Fix All over the
+solution with any key (null included), the way `dotnet format` does. Test names follow `Subject_WithCondition_ExpectedOutcome`, e.g.
 `Fix_WithDerivedClass_OffersNoFix`.
 
 `samples/Hlibz.TypeRules.Analyzers.Sample` references the analyzer project as an analyzer, is
