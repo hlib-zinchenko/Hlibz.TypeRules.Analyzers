@@ -26,7 +26,7 @@ public sealed class RestrictAccessibilityCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return WellKnownFixAllProviders.BatchFixer;
+        return RuleFixAllProvider.Batch(Descriptors.AccessibilityExceedsMaximumId);
     }
 
     /// <inheritdoc />
@@ -80,7 +80,7 @@ public sealed class RestrictAccessibilityCodeFixProvider : CodeFixProvider
                     type,
                     accessibility,
                     cancellationToken),
-                equivalenceKey: Descriptors.AccessibilityExceedsMaximumId + keyword),
+                equivalenceKey: Descriptors.AccessibilityExceedsMaximumId),
             diagnostic);
     }
 

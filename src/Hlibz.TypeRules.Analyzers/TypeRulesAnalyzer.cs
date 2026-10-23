@@ -79,12 +79,15 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
         private readonly ConcurrentDictionary<string, bool> _reportedErrors =
             new(StringComparer.Ordinal);
 
+        private readonly Lazy<Dictionary<string, string>> _errorFiles;
+
         public CompilationAnalyzer(
             Compilation compilation,
             AnalyzerConfigOptionsProvider optionsProvider)
         {
             _compilation = compilation;
             _optionsProvider = optionsProvider;
+            _errorFiles = new Lazy<Dictionary<string, string>>(FindErrorFiles);
         }
 
         public void AnalyzeNamedType(SymbolAnalysisContext context)
@@ -98,9 +101,7 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                 return;
             }
 
-            TypeRulesConfiguration configuration = _configurations.GetOrAdd(
-                _optionsProvider.GetOptions(syntaxTree),
-                options => ConfigurationParser.Parse(options, _compilation));
+            TypeRulesConfiguration configuration = GetConfiguration(syntaxTree);
 
             ReportConfigurationErrors(context, configuration);
 
@@ -134,6 +135,13 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
             MemberRules.AnalyzeReferences(context, type, matching, configuration);
         }
 
+        private TypeRulesConfiguration GetConfiguration(SyntaxTree syntaxTree)
+        {
+            return _configurations.GetOrAdd(
+                _optionsProvider.GetOptions(syntaxTree),
+                options => ConfigurationParser.Parse(options, _compilation));
+        }
+
         private void ReportConfigurationErrors(
             SymbolAnalysisContext context,
             TypeRulesConfiguration configuration)
@@ -142,10 +150,52 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
             {
                 if (_reportedErrors.TryAdd(error, true))
                 {
-                    context.ReportDiagnostic(
-                        Diagnostic.Create(Descriptors.InvalidConfiguration, Location.None, error));
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        Descriptors.InvalidConfiguration,
+                        Location.None,
+                        error,
+                        _errorFiles.Value.TryGetValue(error, out string? file) ? file : "?"));
                 }
             }
+        }
+
+        /// <summary>
+        /// For each configuration error, the first file (by path) whose options have it, relative
+        /// to the project directory. Diagnostics can't point into .editorconfig, so this says which
+        /// configuration to look at. Found over every file rather than whichever one was analyzed
+        /// first, so the message is the same on every build.
+        /// </summary>
+        private Dictionary<string, string> FindErrorFiles()
+        {
+            _optionsProvider.GlobalOptions.TryGetValue(
+                "build_property.projectdir",
+                out string? projectDirectory);
+
+            Dictionary<string, string> errorFiles = new(StringComparer.Ordinal);
+            foreach (SyntaxTree syntaxTree in _compilation.SyntaxTrees
+                .OrderBy(tree => tree.FilePath, StringComparer.Ordinal))
+            {
+                foreach (string error in GetConfiguration(syntaxTree).Errors)
+                {
+                    if (!errorFiles.ContainsKey(error))
+                    {
+                        errorFiles.Add(error, GetDisplayPath(syntaxTree.FilePath, projectDirectory));
+                    }
+                }
+            }
+
+            return errorFiles;
+        }
+
+        private static string GetDisplayPath(string path, string? projectDirectory)
+        {
+            if (!string.IsNullOrEmpty(projectDirectory)
+                && path.StartsWith(projectDirectory, StringComparison.Ordinal))
+            {
+                path = path.Substring(projectDirectory!.Length);
+            }
+
+            return path.Replace('\\', '/');
         }
 
         private static void AnalyzeAccessibility(
@@ -187,7 +237,7 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                 type.Locations[0],
                 type.Locations.Skip(1),
                 properties,
-                type.Name,
+                TypeNames.Format(type),
                 effective.ToDisplayString(),
                 FormatRuleSetNames(violated),
                 combinedMaximum.ToDisplayString()));
@@ -220,7 +270,7 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                 Descriptors.TypeMustBeSealed,
                 type.Locations[0],
                 type.Locations.Skip(1),
-                type.Name,
+                TypeNames.Format(type),
                 FormatRuleSetNames(requiring)));
         }
 
@@ -250,7 +300,7 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                     Descriptors.WrongNamespace,
                     type.Locations[0],
                     type.Locations.Skip(1),
-                    type.Name,
+                    TypeNames.Format(type),
                     namespaceName.Length == 0
                         ? "the global namespace"
                         : $"namespace '{namespaceName}'",
@@ -272,16 +322,20 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
         {
             foreach (Equality required in new[] { Equality.Value, Equality.Identity })
             {
-                List<string> requiring = matching
+                List<TypeRuleSet> requiring = matching
                     .Where(ruleSet => ruleSet.Equality == required)
-                    .Select(ruleSet => ruleSet.Name)
                     .ToList();
+
+                if (requiring.Count == 0)
+                {
+                    continue;
+                }
 
                 string? problem = required == Equality.Value
                     ? GetValueEqualityProblem(type)
-                    : GetIdentityEqualityProblem(type);
+                    : GetIdentityEqualityProblem(type, requiring);
 
-                if (requiring.Count == 0 || problem is null)
+                if (problem is null)
                 {
                     continue;
                 }
@@ -290,9 +344,9 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                     Descriptors.WrongEquality,
                     type.Locations[0],
                     type.Locations.Skip(1),
-                    type.Name,
+                    TypeNames.Format(type),
                     problem,
-                    FormatRuleSetNames(requiring),
+                    FormatRuleSetNames(requiring.Select(ruleSet => ruleSet.Name).ToList()),
                     required == Equality.Value ? "value" : "identity"));
             }
         }
@@ -304,15 +358,54 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                 : "compares by reference";
         }
 
-        private static string? GetIdentityEqualityProblem(INamedTypeSymbol type)
+        /// <summary>
+        /// Records and structs compare their state. A type matched through a class (an
+        /// <c>Entity&lt;TId&gt;</c> base) also can't redefine equality itself: the matched class
+        /// decides how entities compare. Matched only through interfaces, an <c>Equals</c>
+        /// override may well compare ids, so it isn't reported.
+        /// </summary>
+        private static string? GetIdentityEqualityProblem(
+            INamedTypeSymbol type,
+            List<TypeRuleSet> requiring)
         {
-            return type switch
+            string? problem = type switch
             {
                 { IsRecord: true, TypeKind: TypeKind.Struct } => "is a record struct",
                 { IsRecord: true } => "is a record",
                 { TypeKind: TypeKind.Struct } => "is a struct",
                 _ => null,
             };
+
+            if (problem is not null
+                || !requiring.Any(ruleSet => ruleSet.MatchedTypes.Any(matchedType =>
+                    matchedType.TypeKind == TypeKind.Class
+                    && TypeRuleSet.IsDerivedFrom(type, matchedType))))
+            {
+                return problem;
+            }
+
+            if (DeclaresEqualsOverride(type))
+            {
+                return "overrides Equals(object)";
+            }
+
+            INamedTypeSymbol? equatable = type.Interfaces.FirstOrDefault(implemented =>
+                implemented.Name == "IEquatable"
+                && implemented.Arity == 1
+                && implemented.ContainingNamespace.ToDisplayString() == "System");
+
+            return equatable is null
+                ? null
+                : "implements " + equatable.ToDisplayString(
+                    SymbolDisplayFormat.CSharpShortErrorMessageFormat);
+        }
+
+        private static bool DeclaresEqualsOverride(INamedTypeSymbol type)
+        {
+            return type.GetMembers(nameof(Equals)).OfType<IMethodSymbol>().Any(method =>
+                method.IsOverride
+                && method.Parameters.Length == 1
+                && method.Parameters[0].Type.SpecialType == SpecialType.System_Object);
         }
 
         /// <summary>
@@ -326,15 +419,9 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                  current is not null && current.SpecialType != SpecialType.System_Object;
                  current = current.BaseType)
             {
-                foreach (IMethodSymbol method
-                    in current.GetMembers(nameof(Equals)).OfType<IMethodSymbol>())
+                if (DeclaresEqualsOverride(current))
                 {
-                    if (method.IsOverride
-                        && method.Parameters.Length == 1
-                        && method.Parameters[0].Type.SpecialType == SpecialType.System_Object)
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 

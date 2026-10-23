@@ -51,7 +51,7 @@ internal static class Immutability
                 MutableStruct,
                 type.Locations[0],
                 type.Locations.Skip(1),
-                type.Name,
+                TypeNames.Format(type),
                 "is a struct that isn't readonly",
                 ruleSetNames);
         }
@@ -81,7 +81,7 @@ internal static class Immutability
                         SetAccessor,
                         setter.Locations.FirstOrDefault() ?? property.Locations[0],
                         [],
-                        $"{type.Name}.{property.Name}",
+                        $"{TypeNames.Format(type)}.{property.Name}",
                         "has a set accessor",
                         ruleSetNames);
                     break;
@@ -112,7 +112,7 @@ internal static class Immutability
             return;
         }
 
-        string name = $"{type.Name}.{stored.Name}";
+        string name = $"{TypeNames.Format(type)}.{stored.Name}";
 
         if (!field.IsImplicitlyDeclared && !field.IsReadOnly)
         {

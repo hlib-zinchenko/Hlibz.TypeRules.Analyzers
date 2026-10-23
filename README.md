@@ -146,8 +146,8 @@ dotnet format analyzers --diagnostics TR101 --severity warn
 
 - **Fix one rule ID per run.** After one rule's fixes, the next rule's diagnostics in the same
   run point at code that has moved, and aren't fixed.
-- **Rerun until nothing changes.** `dotnet format` applies one kind of fix per rule ID per run,
-  so a type with several TR303 problems (a mutable field and a setter) may need more runs.
+- **Rerun until nothing changes.** A fix that only compiles once another rule's fix is in place
+  is left out until a later run.
 - **Check the project file after TR104.** `dotnet format` adds the generated `IFoo.cs` to the
   `.csproj` as an explicit `<Compile Include>`, which SDK-style projects already include, so the
   next build fails with NETSDK1022. Delete that item.
@@ -171,8 +171,9 @@ digits, `_` and `-`.
 | `forbid_member_types` | Rule-set names, separated by `\|` or `,`; may name the rule set itself | TR304: fields and auto-properties of matched types can't hold types of those rule sets, directly or in collections. A rule set named here needs only `match` |
 | `allow_self_references` | `true` (default) or `false` | TR304: whether a type may still hold its own type (`Category.Parent`). Only valid with `forbid_member_types` |
 | `require_immutable` | `true` or `false` | TR303: matched types' instance fields must be readonly, their properties can't have `set` accessors (`init` is fine), their fields and auto-properties can't store mutable collections, and structs must be `readonly struct`s |
-| `equality` | `value` or `identity` | TR202: `value` requires a record, a struct, or an `Equals(object)` override (inherited ones count); `identity` forbids records and structs |
+| `equality` | `value` or `identity` | TR202: `value` requires a record, a struct, or an `Equals(object)` override (inherited ones count); `identity` forbids records and structs, and below a matched class, overriding `Equals(object)` or implementing `IEquatable<T>` |
 | `max_constructor_accessibility` | Same values as `max_accessibility` | TR201: constructors of matched non-abstract types, including implicit and primary ones, can't be more accessible than this |
+| `enabled` | `true` (default) or `false` | `false` switches the rule set off, e.g. for one folder (see below) |
 
 A rule set needs `match` and at least one of the other options.
 
@@ -213,6 +214,21 @@ and `Entity<int>` alike.
 Options are read per file, like any `.editorconfig` setting, so rule sets can differ between
 folders. A `.globalconfig` works too, for rules that apply to a whole project.
 
+A folder's own `.editorconfig` (without `root = true`) can override single options, or switch a
+rule set off there:
+
+```ini
+# tests/.editorconfig: test fixtures may set what they like.
+[*.cs]
+typerules.entities.max_setter_accessibility = internal
+typerules.handlers.enabled = false
+```
+
+A shared kernel's public abstract base classes (an `EntityConfiguration<T>` every module derives
+from) are matched too, and usually aren't meant to follow the rules for the types built on them.
+Configure such a rule set in the modules' folder rather than at the root, or switch it off in the
+kernel's folder.
+
 One `.editorconfig` usually covers several projects, and not every project references every
 matched type. So a `match` type the project can't see is skipped silently, unless the namespace
 it's declared in *does* exist, in which case the name is most likely a typo and TR000 reports it.
@@ -222,7 +238,9 @@ it's declared in *does* exist, in which case the name is most likely a typo and 
 Anything TypeRules can't apply is reported as [TR000](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR000.md): unknown options, bad
 values, types that don't resolve, types nothing can inherit from. A rule set with a problem is
 ignored entirely rather than half-applied. TR000 has no source location, because it points at
-configuration, not code, so it appears in build output rather than on a line in the editor.
+configuration, not code, so it appears in build output rather than on a line in the editor. It
+names the first file the broken settings apply to, so you know which `.editorconfig` to look at,
+and suggests the closest type name for a `match` type that doesn't exist.
 
 ## What TypeRules doesn't do
 

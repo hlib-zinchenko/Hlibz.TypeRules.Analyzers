@@ -302,7 +302,7 @@ public sealed class SetterExceedsMaximumTests
         await VerifyAnalyzerAsync(
             configuration,
             source,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'entities' sets allow_init without max_setter_accessibility, which it "
                 + "modifies"));
     }

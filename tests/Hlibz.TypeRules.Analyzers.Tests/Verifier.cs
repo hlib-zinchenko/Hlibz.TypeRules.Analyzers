@@ -54,9 +54,25 @@ internal static class Verifier
 
     private const string ContractsPath = "/0/Contracts.cs";
 
+    /// <summary>What MSBuild passes every compilation, as far as the analyzer reads it.</summary>
+    private const string GlobalConfig = """
+        is_global = true
+        build_property.ProjectDir = /0/
+        """;
+
     public static DiagnosticResult Diagnostic(DiagnosticDescriptor descriptor)
     {
         return new DiagnosticResult(descriptor);
+    }
+
+    /// <summary>
+    /// TR000 with <paramref name="message"/>. It names the first file the configuration applies
+    /// to, relative to the project directory: Contracts.cs, which every test compilation has.
+    /// </summary>
+    public static DiagnosticResult ConfigurationError(string message)
+    {
+        return new DiagnosticResult(Descriptors.InvalidConfiguration)
+            .WithArguments(message, "Contracts.cs");
     }
 
     public static Task VerifyAnalyzerAsync(
@@ -79,6 +95,7 @@ internal static class Verifier
 
         AddSources(test.TestState, sources);
         test.TestState.AnalyzerConfigFiles.Add(("/.editorconfig", EditorConfig(configuration)));
+        test.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", GlobalConfig));
         test.ExpectedDiagnostics.AddRange(expected);
 
         await test.RunAsync(TestContext.Current.CancellationToken);
@@ -131,6 +148,7 @@ internal static class Verifier
         }
 
         test.TestState.AnalyzerConfigFiles.Add(("/.editorconfig", EditorConfig(configuration)));
+        test.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", GlobalConfig));
         test.ExpectedDiagnostics.AddRange(expected);
 
         if (sources.SequenceEqual(fixedSources))
@@ -160,34 +178,46 @@ internal static class Verifier
         ImmutableArray<MetadataReference> references = await ReferenceAssemblies.Net.Net80
             .ResolveAsync(LanguageNames.CSharp, cancellationToken);
 
-        using AdhocWorkspace workspace = new();
-        Project project = workspace.AddProject("Test", LanguageNames.CSharp)
-            .WithCompilationOptions(
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
-            .WithParseOptions(new CSharpParseOptions(LanguageVersion.Latest))
-            .WithMetadataReferences(references);
-
         // Encoded the way files read from disk are: UTF-8 without a BOM.
         UTF8Encoding encoding = new(encoderShouldEmitUTF8Identifier: false);
-        for (int i = 0; i < sources.Length; i++)
-        {
-            project = project.AddDocument(
-                    $"Test{i}.cs",
-                    SourceText.From(sources[i], encoding),
-                    filePath: $"/0/Test{i}.cs")
-                .Project;
-        }
+        ProjectId projectId = ProjectId.CreateNewId();
+        List<DocumentInfo> documentInfos = sources
+            .Select((source, i) => CreateDocument($"Test{i}.cs", source))
+            .Append(CreateDocument("Contracts.cs", Contracts))
+            .ToList();
 
-        project = project.AddDocument(
-                "Contracts.cs",
-                SourceText.From(Contracts, encoding),
-                filePath: ContractsPath)
-            .Project;
-        project = project.AddAnalyzerConfigDocument(
-                ".editorconfig",
-                SourceText.From(EditorConfig(configuration)),
-                filePath: "/.editorconfig")
-            .Project;
+        using AdhocWorkspace workspace = new();
+        Project project = workspace.AddProject(ProjectInfo.Create(
+                projectId,
+                VersionStamp.Default,
+                "Test",
+                "Test",
+                LanguageNames.CSharp,
+                compilationOptions: new CSharpCompilationOptions(
+                    OutputKind.DynamicallyLinkedLibrary),
+                parseOptions: new CSharpParseOptions(LanguageVersion.Latest),
+                documents: documentInfos,
+                metadataReferences: references)
+            .WithAnalyzerConfigDocuments([
+                DocumentInfo.Create(
+                    DocumentId.CreateNewId(projectId),
+                    ".editorconfig",
+                    loader: TextLoader.From(TextAndVersion.Create(
+                        SourceText.From(EditorConfig(configuration)),
+                        VersionStamp.Default)),
+                    filePath: "/.editorconfig"),
+            ]));
+
+        DocumentInfo CreateDocument(string name, string source)
+        {
+            return DocumentInfo.Create(
+                DocumentId.CreateNewId(projectId),
+                name,
+                loader: TextLoader.From(TextAndVersion.Create(
+                    SourceText.From(source, encoding),
+                    VersionStamp.Default)),
+                filePath: "/0/" + name);
+        }
 
         TCodeFix codeFix = new();
         Compilation compilation = (await project.GetCompilationAsync(cancellationToken))!;
@@ -215,7 +245,9 @@ internal static class Verifier
             solution = operations.OfType<ApplyChangesOperation>().Single().ChangedSolution;
         }
 
-        Project fixedProject = solution.GetProject(project.Id)!;
+        // Applied to the workspace, as dotnet format does before saving.
+        Assert.True(workspace.TryApplyChanges(solution));
+        Project fixedProject = workspace.CurrentSolution.GetProject(project.Id)!;
         Compilation fixedCompilation = (await fixedProject.GetCompilationAsync(cancellationToken))!;
         Assert.Empty(fixedCompilation.GetDiagnostics(cancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));

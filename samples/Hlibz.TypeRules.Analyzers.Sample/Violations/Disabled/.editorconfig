@@ -1,0 +1,5 @@
+# Switches the 'endpoints' rule set off for this folder only. Its other options still come from
+# the sample's own .editorconfig.
+
+[*.cs]
+typerules.endpoints.enabled = false

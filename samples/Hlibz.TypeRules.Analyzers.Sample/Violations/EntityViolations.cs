@@ -1,5 +1,5 @@
-// Violations of the 'entities' rule set: sealed, private setters, read-only collections, and
-// other entities referenced by id.
+// Violations of the 'entities' rule set: sealed, private setters, read-only collections, other
+// entities referenced by id, and the identity equality Entity<TId> defines.
 using Sample.Handlers;
 
 namespace Sample.Violations.Entities;
@@ -56,4 +56,23 @@ internal sealed class Category : Entity<int>
 
     // Fine: allow_self_references defaults to true, so a category may hold its parent.
     public Category? Parent { get; private set; }
+}
+
+// TR202: below Entity<TId>, a type can't redefine how entities compare.
+internal sealed class Shipment : Entity<int>
+{
+    public Shipment(int id)
+        : base(id)
+    {
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Shipment;
+    }
+
+    public override int GetHashCode()
+    {
+        return 0;
+    }
 }

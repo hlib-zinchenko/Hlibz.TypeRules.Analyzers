@@ -27,7 +27,7 @@ internal static class Descriptors
     public static readonly DiagnosticDescriptor InvalidConfiguration = new(
         InvalidConfigurationId,
         title: "TypeRules configuration is invalid",
-        messageFormat: "Invalid TypeRules configuration: {0}",
+        messageFormat: "Invalid TypeRules configuration: {0}, in the settings for '{1}'",
         category: "Configuration",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -76,7 +76,7 @@ internal static class Descriptors
         CompanionInterfaceMissingId,
         title: "Type must implement its companion interface",
         messageFormat: "'{0}' must implement a companion interface '{1}' that extends {2}, as "
-            + "required by rule set {3}",
+            + "required by rule set {3}{4}",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -114,7 +114,9 @@ internal static class Descriptors
             + "the way the rule set's equality option says. With equality = value (value "
             + "objects), they must be records or structs, or override Equals(object) themselves "
             + "or through a base class. With equality = identity (entities), they must be classes "
-            + "that aren't records, since a record compares all its state rather than its id.",
+            + "that aren't records, since a record compares all its state rather than its id, "
+            + "and below a matched class they can't override Equals(object) or implement "
+            + "IEquatable<T>: the matched class decides how they compare.",
         helpLinkUri: HelpLink(WrongEqualityId));
 
     // TR3xx: the state a type stores, and who can change it.

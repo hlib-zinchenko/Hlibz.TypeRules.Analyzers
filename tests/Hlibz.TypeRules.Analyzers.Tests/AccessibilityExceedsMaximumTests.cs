@@ -316,4 +316,21 @@ public sealed class AccessibilityExceedsMaximumTests
                 .WithLocation(0)
                 .WithArguments("GetUsersEndpoint", "internal", "'endpoints'", "private"));
     }
+
+    [Fact]
+    public async Task Analyze_WithGenericType_NamesItWithTypeParameters()
+    {
+        const string source = """
+            namespace App;
+
+            public sealed class {|#0:GetEndpoint|}<TItem, TKey> : IEndpoint { }
+            """;
+
+        await VerifyAnalyzerAsync(
+            InternalEndpoints,
+            source,
+            Diagnostic(Descriptors.AccessibilityExceedsMaximum)
+                .WithLocation(0)
+                .WithArguments("GetEndpoint<TItem, TKey>", "public", "'endpoints'", "internal"));
+    }
 }

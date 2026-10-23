@@ -28,26 +28,54 @@ public sealed class MakeImmutableCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return WellKnownFixAllProviders.BatchFixer;
+        return ImmutableFixAllProvider.Instance;
     }
 
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
         Diagnostic diagnostic = context.Diagnostics[0];
-        Document document = context.Document;
-        CancellationToken cancellationToken = context.CancellationToken;
-
         if (!diagnostic.Properties.TryGetValue(Immutability.ProblemProperty, out string? problem)
-            || await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false)
-                is not { } root
-            || await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false)
-                is not { } semanticModel)
+            || await context.Document.GetSyntaxRootAsync(context.CancellationToken)
+                .ConfigureAwait(false) is not { } root)
         {
             return;
         }
 
         SyntaxNode? node = root.FindToken(diagnostic.Location.SourceSpan.Start).Parent;
+        if (await TryFixAsync(context.Document, node, problem, context.CancellationToken)
+                .ConfigureAwait(false) is not { } fix)
+        {
+            return;
+        }
+
+        context.RegisterCodeFix(
+            CodeAction.Create(
+                title: fix.Title,
+                createChangedDocument: _ => Task.FromResult(fix.Changed),
+                equivalenceKey: Descriptors.TypeMustBeImmutableId),
+            diagnostic);
+    }
+
+    /// <summary>
+    /// The fix for <paramref name="problem"/> at <paramref name="node"/>, a node of
+    /// <paramref name="document"/>'s current root, or null when there's none that compiles.
+    /// </summary>
+    private static async Task<(string Title, Document Changed)?> TryFixAsync(
+        Document document,
+        SyntaxNode? node,
+        string? problem,
+        CancellationToken cancellationToken)
+    {
+        if (node is null
+            || await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false)
+                is not { } root
+            || await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false)
+                is not { } semanticModel)
+        {
+            return null;
+        }
+
         SyntaxGenerator generator = SyntaxGenerator.GetGenerator(document);
         (string Title, SyntaxNode Declaration, SyntaxNode Replacement)? change = problem switch
         {
@@ -65,7 +93,7 @@ public sealed class MakeImmutableCodeFixProvider : CodeFixProvider
                     cancellationToken)
                 is not { } symbol)
         {
-            return;
+            return null;
         }
 
         Document changed = document.WithSyntaxRoot(
@@ -78,15 +106,10 @@ public sealed class MakeImmutableCodeFixProvider : CodeFixProvider
                     cancellationToken)
                 .ConfigureAwait(false))
         {
-            return;
+            return null;
         }
 
-        context.RegisterCodeFix(
-            CodeAction.Create(
-                title: fix.Title,
-                createChangedDocument: _ => Task.FromResult(changed),
-                equivalenceKey: Descriptors.TypeMustBeImmutableId + problem),
-            diagnostic);
+        return (fix.Title, changed);
     }
 
     /// <summary>
@@ -179,5 +202,101 @@ public sealed class MakeImmutableCodeFixProvider : CodeFixProvider
         return generator.WithModifiers(
             declaration,
             generator.GetModifiers(declaration).WithIsReadOnly(true));
+    }
+
+    /// <summary>
+    /// Applies the fixes one after another, each checked against the code the previous ones
+    /// produced, rather than merging fixes that were each checked alone. Struct fixes go last: a
+    /// struct only compiles as a readonly struct once its fields and setters are fixed, so a
+    /// mutable struct ends up fully immutable in one pass. Targets are found again through
+    /// annotations, since earlier fixes move what the diagnostics point at.
+    /// </summary>
+    private sealed class ImmutableFixAllProvider : FixAllProvider
+    {
+        public static readonly ImmutableFixAllProvider Instance = new();
+
+        public override IEnumerable<FixAllScope> GetSupportedFixAllScopes()
+        {
+            return [FixAllScope.Document, FixAllScope.Project, FixAllScope.Solution];
+        }
+
+        public override Task<CodeAction?> GetFixAsync(FixAllContext fixAllContext)
+        {
+            if (!RuleFixAllProvider.IsFor(fixAllContext, Descriptors.TypeMustBeImmutableId))
+            {
+                return Task.FromResult<CodeAction?>(null);
+            }
+
+            return Task.FromResult<CodeAction?>(CodeAction.Create(
+                "Make types immutable",
+                cancellationToken => FixAllAsync(fixAllContext, cancellationToken),
+                Descriptors.TypeMustBeImmutableId));
+        }
+
+        private static async Task<Solution> FixAllAsync(
+            FixAllContext context,
+            CancellationToken cancellationToken)
+        {
+            Solution solution = context.Solution;
+            List<(DocumentId DocumentId, SyntaxAnnotation Annotation, string Problem)> targets = [];
+
+            IEnumerable<IGrouping<SyntaxTree?, Diagnostic>> byTree =
+                (await RuleFixAllProvider.GetDiagnosticsAsync(context).ConfigureAwait(false))
+                .GroupBy(diagnostic => diagnostic.Location.SourceTree);
+
+            foreach (IGrouping<SyntaxTree?, Diagnostic> group in byTree)
+            {
+                if (solution.GetDocument(group.Key) is not { } document
+                    || await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false)
+                        is not { } root)
+                {
+                    continue;
+                }
+
+                Dictionary<SyntaxNode, SyntaxAnnotation> annotations = [];
+                foreach (Diagnostic diagnostic in group)
+                {
+                    if (diagnostic.Properties.TryGetValue(
+                            Immutability.ProblemProperty,
+                            out string? problem)
+                        && problem is not null
+                        && root.FindToken(diagnostic.Location.SourceSpan.Start).Parent
+                            is { } node
+                        && !annotations.ContainsKey(node))
+                    {
+                        SyntaxAnnotation annotation = new();
+                        annotations.Add(node, annotation);
+                        targets.Add((document.Id, annotation, problem));
+                    }
+                }
+
+                solution = document
+                    .WithSyntaxRoot(root.ReplaceNodes(
+                        annotations.Keys,
+                        (original, rewritten) =>
+                            rewritten.WithAdditionalAnnotations(annotations[original])))
+                    .Project.Solution;
+            }
+
+            foreach ((DocumentId documentId, SyntaxAnnotation annotation, string problem)
+                in targets.OrderBy(target => target.Problem == Immutability.MutableStruct))
+            {
+                if (solution.GetDocument(documentId) is not { } document
+                    || await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false)
+                        is not { } root)
+                {
+                    continue;
+                }
+
+                SyntaxNode? node = root.GetAnnotatedNodes(annotation).FirstOrDefault();
+                if (await TryFixAsync(document, node, problem, cancellationToken)
+                        .ConfigureAwait(false) is { } fix)
+                {
+                    solution = fix.Changed.Project.Solution;
+                }
+            }
+
+            return solution;
+        }
     }
 }

@@ -124,7 +124,7 @@ internal static class MemberRules
             setter.Locations.FirstOrDefault() ?? property.Locations[0],
             properties,
             isInit ? "init" : "set",
-            $"{type.Name}.{property.Name}",
+            $"{TypeNames.Format(type)}.{property.Name}",
             setterScope.ToDisplayString(),
             FormatRuleSetNames(violated),
             combinedMaximum.ToDisplayString()));
@@ -149,7 +149,7 @@ internal static class MemberRules
         context.ReportDiagnostic(Diagnostic.Create(
             Descriptors.MutableCollectionExposed,
             member.Locations[0],
-            $"{type.Name}.{member.Name}",
+            $"{TypeNames.Format(type)}.{member.Name}",
             memberType.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat),
             FormatRuleSetNames(ruleSets.Select(ruleSet => ruleSet.Name).ToList())));
     }
@@ -222,7 +222,7 @@ internal static class MemberRules
                 context.ReportDiagnostic(Diagnostic.Create(
                     Descriptors.ForbiddenMemberType,
                     stored.Locations[0],
-                    $"{type.Name}.{stored.Name}",
+                    $"{TypeNames.Format(type)}.{stored.Name}",
                     held.WithNullableAnnotation(NullableAnnotation.None)
                         .ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat),
                     forbiddenRuleSet.Name,

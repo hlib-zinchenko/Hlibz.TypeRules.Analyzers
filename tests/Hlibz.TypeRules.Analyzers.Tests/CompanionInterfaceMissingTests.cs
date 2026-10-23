@@ -14,12 +14,20 @@ public sealed class CompanionInterfaceMissingTests
         typerules.handlers.companion_interface = true
         """;
 
-    /// <summary>TR104 for <c>GetUserHandler</c>, marked <c>{|#0:...|}</c>.</summary>
-    private static DiagnosticResult GetUserHandlerDiagnostic()
+    /// <summary>
+    /// TR104 for <c>GetUserHandler</c>, marked <c>{|#0:...|}</c>, with the reason an existing
+    /// <c>IGetUserHandler</c> doesn't count (empty when there's none, or it's just not implemented).
+    /// </summary>
+    private static DiagnosticResult GetUserHandlerDiagnostic(string reason = "")
     {
         return Diagnostic(Descriptors.CompanionInterfaceMissing)
             .WithLocation(0)
-            .WithArguments("GetUserHandler", "IGetUserHandler", "'IRequestHandler'", "'handlers'");
+            .WithArguments(
+                "GetUserHandler",
+                "IGetUserHandler",
+                "'IRequestHandler'",
+                "'handlers'",
+                reason);
     }
 
     [Fact]
@@ -203,7 +211,8 @@ public sealed class CompanionInterfaceMissingTests
                     "GetOrderHandler",
                     "IGetOrderHandler",
                     "'IRequestHandler'",
-                    "'handlers'"));
+                    "'handlers'",
+                    ""));
     }
 
     [Fact]
@@ -438,7 +447,7 @@ public sealed class CompanionInterfaceMissingTests
             fixedSource,
             Diagnostic(Descriptors.CompanionInterfaceMissing)
                 .WithLocation(0)
-                .WithArguments("Lookup", "ILookup<T>", "'IRequestHandler'", "'handlers'"));
+                .WithArguments("Lookup<T>", "ILookup<T>", "'IRequestHandler'", "'handlers'", ""));
     }
 
     [Fact]
@@ -488,7 +497,7 @@ public sealed class CompanionInterfaceMissingTests
             Handlers,
             source,
             source,
-            GetUserHandlerDiagnostic());
+            GetUserHandlerDiagnostic("; 'IGetUserHandler' exists but doesn't extend it"));
     }
 
     [Fact]
@@ -508,7 +517,7 @@ public sealed class CompanionInterfaceMissingTests
             Handlers,
             source,
             source,
-            GetUserHandlerDiagnostic());
+            GetUserHandlerDiagnostic("; 'IGetUserHandler' exists but isn't an interface"));
     }
 
     [Fact]
@@ -527,7 +536,7 @@ public sealed class CompanionInterfaceMissingTests
         await VerifyAnalyzerAsync(
             configuration,
             source,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'entities' sets companion_interface, so every match type must be an "
                 + "interface, but 'T:App.Entity`1' is not"));
     }

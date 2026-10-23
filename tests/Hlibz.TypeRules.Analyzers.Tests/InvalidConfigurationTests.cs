@@ -27,13 +27,13 @@ public sealed class InvalidConfigurationTests
         await VerifyAnalyzerAsync(
             configuration,
             PublicUnsealedEndpoint,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "unknown option 'require_seald' in rule set 'endpoints' "
                 + "(known options: match, max_accessibility, require_sealed, "
                 + "companion_interface, max_setter_accessibility, allow_init, "
                 + "readonly_collections, namespace_pattern, forbid_member_types, "
                 + "allow_self_references, require_immutable, equality, "
-                + "max_constructor_accessibility)"));
+                + "max_constructor_accessibility, enabled)"));
     }
 
     [Fact]
@@ -44,8 +44,7 @@ public sealed class InvalidConfigurationTests
         await VerifyAnalyzerAsync(
             configuration,
             PublicUnsealedEndpoint,
-            Diagnostic(Descriptors.InvalidConfiguration)
-                .WithArguments("rule set 'endpoints' has no match option"));
+            ConfigurationError("rule set 'endpoints' has no match option"));
     }
 
     [Fact]
@@ -56,7 +55,7 @@ public sealed class InvalidConfigurationTests
         await VerifyAnalyzerAsync(
             configuration,
             PublicUnsealedEndpoint,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'endpoints' sets no constraint "
                 + "(expected max_accessibility, require_sealed, companion_interface, "
                 + "max_setter_accessibility, readonly_collections, namespace_pattern, "
@@ -78,16 +77,16 @@ public sealed class InvalidConfigurationTests
         await VerifyAnalyzerAsync(
             configuration,
             PublicUnsealedEndpoint,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'endpoints' has an invalid max_accessibility 'intern' (expected public, "
                 + "protected_internal, internal, protected, private_protected or private)"),
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'endpoints' has an invalid require_sealed 'yes' "
                 + "(expected true or false)"),
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'endpoints' has an invalid equality 'structural' (expected value or "
                 + "identity)"),
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'endpoints' has an invalid max_constructor_accessibility 'privat' "
                 + "(expected public, protected_internal, internal, protected, private_protected "
                 + "or private)"));
@@ -104,7 +103,7 @@ public sealed class InvalidConfigurationTests
         await VerifyAnalyzerAsync(
             configuration,
             PublicUnsealedEndpoint,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'endpoints' matches 'M:App.IEndpoint.Handle', which is not a type "
                 + "(expected T:Namespace.TypeName)"));
     }
@@ -120,8 +119,9 @@ public sealed class InvalidConfigurationTests
         await VerifyAnalyzerAsync(
             configuration,
             PublicUnsealedEndpoint,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
-                "rule set 'endpoints' matches type 'T:App.IEndpont', which was not found"));
+            ConfigurationError(
+                "rule set 'endpoints' matches type 'T:App.IEndpont', which was not found "
+                + "(did you mean 'T:App.IEndpoint'?)"));
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public sealed class InvalidConfigurationTests
         await VerifyAnalyzerAsync(
             configuration,
             PublicUnsealedEndpoint,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'sealed' matches 'T:App.SealedBase', which no type can inherit from "
                 + "or implement"));
     }
@@ -170,7 +170,7 @@ public sealed class InvalidConfigurationTests
         await VerifyAnalyzerAsync(
             configuration,
             PublicUnsealedEndpoint,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "key 'typerules.endpoints' must have the form typerules.<rule set>.<option>"));
     }
 
@@ -193,7 +193,7 @@ public sealed class InvalidConfigurationTests
         await VerifyAnalyzerAsync(
             configuration,
             source,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'endpoints' sets no constraint "
                 + "(expected max_accessibility, require_sealed, companion_interface, "
                 + "max_setter_accessibility, readonly_collections, namespace_pattern, "
@@ -225,5 +225,120 @@ public sealed class InvalidConfigurationTests
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
                 .WithArguments("GetUsersHandler", "internal", "'handlers'", "private protected"));
+    }
+
+    [Fact]
+    public async Task Parse_WithMisspelledGenericType_SuggestsTheClosestType()
+    {
+        const string configuration = """
+            typerules.handlers.match = T:App.Contracts.IRequestHandlr`2
+            typerules.handlers.require_sealed = true
+            """;
+
+        await VerifyAnalyzerAsync(
+            configuration,
+            PublicUnsealedEndpoint,
+            ConfigurationError(
+                "rule set 'handlers' matches type 'T:App.Contracts.IRequestHandlr`2', which was "
+                + "not found (did you mean 'T:App.Contracts.IRequestHandler`2'?)"));
+    }
+
+    [Fact]
+    public async Task Parse_WithMissingTypeUnlikeAnyOther_SuggestsNothing()
+    {
+        const string configuration = """
+            typerules.endpoints.match = T:App.Controllers
+            typerules.endpoints.require_sealed = true
+            """;
+
+        await VerifyAnalyzerAsync(
+            configuration,
+            PublicUnsealedEndpoint,
+            ConfigurationError(
+                "rule set 'endpoints' matches type 'T:App.Controllers', which was not found"));
+    }
+
+    [Fact]
+    public async Task Parse_WithMisspelledOnlyConstraint_ReportsOnlyTheUnknownOption()
+    {
+        const string configuration = """
+            typerules.endpoints.match = T:App.IEndpoint
+            typerules.endpoints.require_seald = true
+            """;
+
+        await VerifyAnalyzerAsync(
+            configuration,
+            PublicUnsealedEndpoint,
+            ConfigurationError(
+                "unknown option 'require_seald' in rule set 'endpoints' "
+                + "(known options: match, max_accessibility, require_sealed, "
+                + "companion_interface, max_setter_accessibility, allow_init, "
+                + "readonly_collections, namespace_pattern, forbid_member_types, "
+                + "allow_self_references, require_immutable, equality, "
+                + "max_constructor_accessibility, enabled)"));
+    }
+
+    [Fact]
+    public async Task Parse_WithRuleSetDisabled_IgnoresIt()
+    {
+        const string configuration = """
+            typerules.endpoints.match = T:App.IEndpoint
+            typerules.endpoints.require_sealed = true
+            typerules.endpoints.max_accessibility = internal
+            typerules.endpoints.enabled = false
+            """;
+
+        await VerifyAnalyzerAsync(configuration, PublicUnsealedEndpoint);
+    }
+
+    [Fact]
+    public async Task Parse_WithRuleSetEnabled_AppliesIt()
+    {
+        const string configuration = """
+            typerules.endpoints.match = T:App.IEndpoint
+            typerules.endpoints.require_sealed = true
+            typerules.endpoints.enabled = true
+            """;
+        const string source = """
+            namespace App;
+
+            public class {|#0:GetUsersEndpoint|} : IEndpoint { }
+            """;
+
+        await VerifyAnalyzerAsync(
+            configuration,
+            source,
+            Diagnostic(Descriptors.TypeMustBeSealed)
+                .WithLocation(0)
+                .WithArguments("GetUsersEndpoint", "'endpoints'"));
+    }
+
+    [Fact]
+    public async Task Parse_WithOnlyEnabled_ReportsTR000()
+    {
+        const string configuration = "typerules.endponts.enabled = false";
+
+        await VerifyAnalyzerAsync(
+            configuration,
+            PublicUnsealedEndpoint,
+            ConfigurationError(
+                "rule set 'endponts' only sets enabled, but no rule set 'endponts' is "
+                + "configured"));
+    }
+
+    [Fact]
+    public async Task Parse_WithInvalidEnabled_ReportsTR000AndIgnoresRuleSet()
+    {
+        const string configuration = """
+            typerules.endpoints.match = T:App.IEndpoint
+            typerules.endpoints.require_sealed = true
+            typerules.endpoints.enabled = no
+            """;
+
+        await VerifyAnalyzerAsync(
+            configuration,
+            PublicUnsealedEndpoint,
+            ConfigurationError(
+                "rule set 'endpoints' has an invalid enabled 'no' (expected true or false)"));
     }
 }

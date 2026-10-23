@@ -27,6 +27,7 @@ TR201 Percent(decimal)
 
 TR202 Cart
 TR202 Money
+TR202 Shipment
 
 TR301 Invoice.Total
 TR301 Order.Status

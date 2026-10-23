@@ -197,7 +197,7 @@ public sealed class ForbiddenMemberTypeTests
         await VerifyAnalyzerAsync(
             configuration,
             source,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'dtos' forbids member types of rule set 'entities', which isn't "
                 + "configured"));
     }
@@ -219,7 +219,7 @@ public sealed class ForbiddenMemberTypeTests
         await VerifyAnalyzerAsync(
             configuration,
             source,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'aggregates' sets allow_self_references without forbid_member_types, "
                 + "which it modifies"));
     }

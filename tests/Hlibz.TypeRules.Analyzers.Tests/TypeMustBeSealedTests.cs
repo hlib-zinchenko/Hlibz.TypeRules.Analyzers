@@ -1,5 +1,7 @@
 using Hlibz.TypeRules.Analyzers.CodeFixes;
 
+using Microsoft.CodeAnalysis.Text;
+
 using static Hlibz.TypeRules.Analyzers.Tests.Verifier;
 
 namespace Hlibz.TypeRules.Analyzers.Tests;
@@ -159,5 +161,38 @@ public sealed class TypeMustBeSealedTests
             Diagnostic(Descriptors.TypeMustBeSealed)
                 .WithLocation(1)
                 .WithArguments("GetOrdersEndpoint", "'endpoints'"));
+    }
+
+    [Fact]
+    public async Task FixAll_WithNullEquivalenceKey_SealsEveryClassThatCanBe()
+    {
+        // The first diagnostic has no fix, so dotnet format starts Fix All with a null key.
+        string[] sources =
+        [
+            """
+            namespace App;
+
+            internal class EndpointBase : IEndpoint { }
+
+            internal sealed class GetUsersEndpoint : EndpointBase { }
+            """,
+            """
+            namespace App;
+
+            internal class GetOrdersEndpoint : IEndpoint { }
+            """,
+        ];
+
+        Dictionary<string, SourceText> documents =
+            await FixAllAsync<SealTypeCodeFixProvider>(SealedEndpoints, sources, null);
+
+        Assert.Equal(sources[0], documents["Test0.cs"].ToString());
+        Assert.Equal(
+            """
+            namespace App;
+
+            internal sealed class GetOrdersEndpoint : IEndpoint { }
+            """,
+            documents["Test1.cs"].ToString());
     }
 }

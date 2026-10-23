@@ -147,4 +147,47 @@ public sealed class WrongEqualityTests
                 .WithLocation(0)
                 .WithArguments("Order", "is a record", "'aggregates'", "identity"));
     }
+
+    private const string EntityIdentity = """
+        typerules.entities.match = T:App.Entity`1
+        typerules.entities.equality = identity
+        """;
+
+    [Fact]
+    public async Task Analyze_WithEqualsOverrideBelowMatchedClassForIdentity_ReportsTR202()
+    {
+        const string source = """
+            using System;
+
+            namespace App;
+
+            public sealed class {|#0:Order|} : Entity<int>
+            {
+                public override bool Equals(object obj) => obj is Order;
+
+                public override int GetHashCode() => 0;
+            }
+
+            public sealed class {|#1:Invoice|} : Entity<int>, IEquatable<Invoice>
+            {
+                public bool Equals(Invoice other) => other is not null;
+            }
+
+            public sealed class Customer : Entity<int> { }
+            """;
+
+        await VerifyAnalyzerAsync(
+            EntityIdentity,
+            source,
+            Diagnostic(Descriptors.WrongEquality)
+                .WithLocation(0)
+                .WithArguments("Order", "overrides Equals(object)", "'entities'", "identity"),
+            Diagnostic(Descriptors.WrongEquality)
+                .WithLocation(1)
+                .WithArguments(
+                    "Invoice",
+                    "implements IEquatable<Invoice>",
+                    "'entities'",
+                    "identity"));
+    }
 }

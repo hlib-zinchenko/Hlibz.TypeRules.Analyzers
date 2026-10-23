@@ -104,18 +104,26 @@ internal static class CompanionInterfaces
             properties = properties.Add(StateProperty, state);
         }
 
+        // Say why an IFoo that exists doesn't count.
+        string reason = candidate is null || state is not null
+            ? string.Empty
+            : companion is null
+                ? $"; '{GetDisplayName(type)}' exists but isn't an interface"
+                : $"; '{GetDisplayName(type)}' exists but doesn't extend it";
+
         context.ReportDiagnostic(Diagnostic.Create(
             Descriptors.CompanionInterfaceMissing,
             type.Locations[0],
             type.Locations.Skip(1),
             properties,
-            type.Name,
+            TypeNames.Format(type),
             GetDisplayName(type),
             string.Join(
                 " or ",
                 toExtend.Select(matchedType => "'" + matchedType.ToDisplayString(
                     SymbolDisplayFormat.CSharpShortErrorMessageFormat) + "'")),
-            string.Join(", ", violated.Select(ruleSet => $"'{ruleSet.Name}'"))));
+            string.Join(", ", violated.Select(ruleSet => $"'{ruleSet.Name}'")),
+            reason));
     }
 
     /// <summary><c>IFoo</c>, or <c>IFoo&lt;T&gt;</c> for a generic <c>Foo&lt;T&gt;</c>.</summary>

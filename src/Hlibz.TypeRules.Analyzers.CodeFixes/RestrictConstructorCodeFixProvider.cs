@@ -27,7 +27,7 @@ public sealed class RestrictConstructorCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return WellKnownFixAllProviders.BatchFixer;
+        return RuleFixAllProvider.Batch(Descriptors.ConstructorExceedsMaximumId);
     }
 
     /// <inheritdoc />
@@ -95,7 +95,7 @@ public sealed class RestrictConstructorCodeFixProvider : CodeFixProvider
             CodeAction.Create(
                 title: $"Make the constructor {keyword}",
                 createChangedDocument: _ => Task.FromResult(changed),
-                equivalenceKey: Descriptors.ConstructorExceedsMaximumId + keyword),
+                equivalenceKey: Descriptors.ConstructorExceedsMaximumId),
             diagnostic);
     }
 

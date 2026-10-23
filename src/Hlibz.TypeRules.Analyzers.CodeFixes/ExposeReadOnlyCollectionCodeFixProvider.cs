@@ -31,7 +31,7 @@ public sealed class ExposeReadOnlyCollectionCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return WellKnownFixAllProviders.BatchFixer;
+        return RuleFixAllProvider.Batch(Descriptors.MutableCollectionExposedId);
     }
 
     /// <inheritdoc />

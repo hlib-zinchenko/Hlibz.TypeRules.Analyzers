@@ -28,7 +28,7 @@ public sealed class RestrictSetterCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return WellKnownFixAllProviders.BatchFixer;
+        return RuleFixAllProvider.Batch(Descriptors.SetterExceedsMaximumId);
     }
 
     /// <inheritdoc />
@@ -81,7 +81,7 @@ public sealed class RestrictSetterCodeFixProvider : CodeFixProvider
                     accessor,
                     targetScope,
                     cancellationToken),
-                equivalenceKey: Descriptors.SetterExceedsMaximumId + targetScope.ToDisplayString()),
+                equivalenceKey: Descriptors.SetterExceedsMaximumId),
             diagnostic);
     }
 

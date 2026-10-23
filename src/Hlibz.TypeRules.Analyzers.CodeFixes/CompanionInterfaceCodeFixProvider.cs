@@ -29,8 +29,9 @@ public sealed class CompanionInterfaceCodeFixProvider : CodeFixProvider
     public override ImmutableArray<string> FixableDiagnosticIds { get; } =
         ImmutableArray.Create(Descriptors.CompanionInterfaceMissingId);
 
-    private const string ImplementKey = Descriptors.CompanionInterfaceMissingId + "Implement";
-    private const string ExtractKey = Descriptors.CompanionInterfaceMissingId + "Extract";
+    /// <summary>What a diagnostic's fix does, from its state: implement or extract.</summary>
+    private const string ImplementKind = "Implement";
+    private const string ExtractKind = "Extract";
 
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
@@ -44,8 +45,8 @@ public sealed class CompanionInterfaceCodeFixProvider : CodeFixProvider
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
         Diagnostic diagnostic = context.Diagnostics[0];
-        string? equivalenceKey = GetEquivalenceKey(diagnostic);
-        if (equivalenceKey is null)
+        string? kind = GetKind(diagnostic);
+        if (kind is null)
         {
             return;
         }
@@ -70,7 +71,7 @@ public sealed class CompanionInterfaceCodeFixProvider : CodeFixProvider
 
         string displayName = CompanionInterfaces.GetDisplayName(type);
         string title;
-        if (equivalenceKey == ImplementKey)
+        if (kind == ImplementKind)
         {
             title = $"Implement '{displayName}'";
         }
@@ -92,17 +93,18 @@ public sealed class CompanionInterfaceCodeFixProvider : CodeFixProvider
                     type,
                     diagnostic,
                     cancellationToken),
-                equivalenceKey),
+                Descriptors.CompanionInterfaceMissingId),
             diagnostic);
     }
 
-    private static string? GetEquivalenceKey(Diagnostic diagnostic)
+    /// <summary>Null when the diagnostic has no safe fix.</summary>
+    private static string? GetKind(Diagnostic diagnostic)
     {
         diagnostic.Properties.TryGetValue(CompanionInterfaces.StateProperty, out string? state);
         return state switch
         {
-            CompanionInterfaces.NotImplementedState => ImplementKey,
-            CompanionInterfaces.MissingState => ExtractKey,
+            CompanionInterfaces.NotImplementedState => ImplementKind,
+            CompanionInterfaces.MissingState => ExtractKind,
             _ => null,
         };
     }
@@ -114,7 +116,7 @@ public sealed class CompanionInterfaceCodeFixProvider : CodeFixProvider
         Diagnostic diagnostic,
         CancellationToken cancellationToken)
     {
-        if (GetEquivalenceKey(diagnostic) == ImplementKey)
+        if (GetKind(diagnostic) == ImplementKind)
         {
             Document implemented = await ImplementAsync(
                     document,
@@ -468,8 +470,7 @@ public sealed class CompanionInterfaceCodeFixProvider : CodeFixProvider
     /// Applies the fixes one at a time, each against the solution the previous one produced.
     /// Every type is found again by its documentation ID rather than by position, because earlier
     /// fixes add using directives and files that move or replace what the diagnostics point at.
-    /// A null equivalence key fixes both kinds: <c>dotnet format</c> passes the key of the first
-    /// diagnostic's fix, and null when that diagnostic has no fix.
+    /// Diagnostics without a safe fix are skipped, whatever key Fix All was started with.
     /// </summary>
     private sealed class CompanionFixAllProvider : FixAllProvider
     {
@@ -482,60 +483,30 @@ public sealed class CompanionInterfaceCodeFixProvider : CodeFixProvider
 
         public override Task<CodeAction?> GetFixAsync(FixAllContext fixAllContext)
         {
-            string? title = fixAllContext.CodeActionEquivalenceKey switch
-            {
-                ImplementKey => "Implement companion interfaces",
-                ExtractKey => "Extract companion interfaces",
-                null => "Add companion interfaces",
-                _ => null,
-            };
-
-            if (title is null)
+            if (!RuleFixAllProvider.IsFor(fixAllContext, Descriptors.CompanionInterfaceMissingId))
             {
                 return Task.FromResult<CodeAction?>(null);
             }
 
             return Task.FromResult<CodeAction?>(CodeAction.Create(
-                title,
+                "Add companion interfaces",
                 cancellationToken => FixAllAsync(fixAllContext, cancellationToken),
-                fixAllContext.CodeActionEquivalenceKey));
+                Descriptors.CompanionInterfaceMissingId));
         }
 
         private static async Task<Solution> FixAllAsync(
             FixAllContext context,
             CancellationToken cancellationToken)
         {
-            List<Diagnostic> diagnostics = [];
-            switch (context.Scope)
-            {
-                case FixAllScope.Document when context.Document is not null:
-                    diagnostics.AddRange(await context.GetDocumentDiagnosticsAsync(context.Document)
-                        .ConfigureAwait(false));
-                    break;
-                case FixAllScope.Project:
-                    diagnostics.AddRange(await context.GetAllDiagnosticsAsync(context.Project)
-                        .ConfigureAwait(false));
-                    break;
-                case FixAllScope.Solution:
-                    foreach (Project project in context.Solution.Projects)
-                    {
-                        diagnostics.AddRange(await context.GetAllDiagnosticsAsync(project)
-                            .ConfigureAwait(false));
-                    }
-
-                    break;
-            }
+            List<Diagnostic> diagnostics =
+                await RuleFixAllProvider.GetDiagnosticsAsync(context).ConfigureAwait(false);
 
             Solution solution = context.Solution;
             List<(DocumentId DocumentId, string TypeId, Diagnostic Diagnostic)> work = [];
 
             foreach (Diagnostic diagnostic in diagnostics)
             {
-                // A diagnostic without a key has no safe fix, whatever key Fix All was asked for.
-                string? key = GetEquivalenceKey(diagnostic);
-                if (key is null
-                    || (context.CodeActionEquivalenceKey is not null
-                        && key != context.CodeActionEquivalenceKey)
+                if (GetKind(diagnostic) is null
                     || solution.GetDocument(diagnostic.Location.SourceTree) is not { } document)
                 {
                     continue;

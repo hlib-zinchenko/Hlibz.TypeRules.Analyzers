@@ -27,6 +27,7 @@ internal static class ConfigurationParser
     public const string RequireImmutableOption = "require_immutable";
     public const string EqualityOption = "equality";
     public const string MaxConstructorAccessibilityOption = "max_constructor_accessibility";
+    public const string EnabledOption = "enabled";
 
     private static readonly string[] KnownOptions =
     [
@@ -43,6 +44,7 @@ internal static class ConfigurationParser
         RequireImmutableOption,
         EqualityOption,
         MaxConstructorAccessibilityOption,
+        EnabledOption,
     ];
 
     /// <summary>Options that each add a check; a rule set needs at least one of them.</summary>
@@ -145,15 +147,33 @@ internal static class ConfigurationParser
         ImmutableArray<string>.Builder errors)
     {
         int errorCount = errors.Count;
+        bool hasUnknownOption = false;
 
         foreach (string option in values.Keys.OrderBy(option => option, StringComparer.Ordinal))
         {
             if (Array.IndexOf(KnownOptions, option) < 0)
             {
+                hasUnknownOption = true;
                 errors.Add(
                     $"unknown option '{option}' in rule set '{name}' "
                     + $"(known options: {string.Join(", ", KnownOptions)})");
             }
+        }
+
+        // enabled = false switches a rule set off, typically for one folder. A rule set with only
+        // that key is configured nowhere else, so its name is probably misspelled.
+        bool enabled = !values.ContainsKey(EnabledOption)
+            || ParseBoolean(name, EnabledOption, values, errors);
+        if (values.Count == 1 && values.ContainsKey(EnabledOption))
+        {
+            errors.Add(
+                $"rule set '{name}' only sets enabled, but no rule set '{name}' is configured");
+            return null;
+        }
+
+        if (!enabled)
+        {
+            return null;
         }
 
         AccessScope? maxAccessibility =
@@ -194,7 +214,10 @@ internal static class ConfigurationParser
                 + "which it modifies");
         }
 
-        if (!isForbiddenTarget && !ConstraintOptions.Any(values.ContainsKey))
+        // A misspelled constraint is already reported as an unknown option.
+        if (!isForbiddenTarget
+            && !hasUnknownOption
+            && !ConstraintOptions.Any(values.ContainsKey))
         {
             errors.Add(
                 $"rule set '{name}' sets no constraint (expected "
@@ -431,8 +454,10 @@ internal static class ConfigurationParser
             {
                 if (ContainerExists(id, compilation))
                 {
+                    string? suggestion = SuggestType(id, compilation);
                     errors.Add(
-                        $"rule set '{ruleSetName}' matches type '{id}', which was not found");
+                        $"rule set '{ruleSetName}' matches type '{id}', which was not found"
+                        + (suggestion is null ? string.Empty : $" (did you mean '{suggestion}'?)"));
                 }
 
                 continue;
@@ -476,6 +501,66 @@ internal static class ConfigurationParser
         {
             return DocumentationCommentId.GetSymbolsForDeclarationId(id, compilation).Any();
         }
+    }
+
+    /// <summary>
+    /// The documentation ID of the type in <paramref name="typeId"/>'s container whose name is
+    /// closest to it (ignoring case, generic arity included), or null if none is close enough to
+    /// be a likely typo.
+    /// </summary>
+    private static string? SuggestType(string typeId, Compilation compilation)
+    {
+        string name = typeId.Substring("T:".Length);
+        int lastDot = name.LastIndexOf('.');
+        string container = lastDot < 0 ? string.Empty : name.Substring(0, lastDot);
+        string typeName = name.Substring(lastDot + 1);
+
+        IEnumerable<INamespaceOrTypeSymbol> containers = lastDot < 0
+            ? [compilation.GlobalNamespace]
+            : DocumentationCommentId.GetSymbolsForDeclarationId("N:" + container, compilation)
+                .Concat(DocumentationCommentId.GetSymbolsForDeclarationId(
+                    "T:" + container,
+                    compilation))
+                .OfType<INamespaceOrTypeSymbol>();
+
+        int maximumDistance = Math.Max(2, typeName.Length / 3);
+        return containers
+            .SelectMany(symbol => symbol.GetTypeMembers())
+            .Select(candidate => (
+                Id: DocumentationCommentId.CreateDeclarationId(candidate),
+                Distance: Distance(
+                    typeName.ToLowerInvariant(),
+                    candidate.MetadataName.ToLowerInvariant())))
+            .Where(candidate => candidate.Distance <= maximumDistance)
+            .OrderBy(candidate => candidate.Distance)
+            .ThenBy(candidate => candidate.Id, StringComparer.Ordinal)
+            .Select(candidate => candidate.Id)
+            .FirstOrDefault();
+    }
+
+    /// <summary>The Levenshtein distance between two strings.</summary>
+    private static int Distance(string first, string second)
+    {
+        int[] previous = new int[second.Length + 1];
+        int[] current = new int[second.Length + 1];
+        for (int j = 0; j <= second.Length; j++)
+        {
+            previous[j] = j;
+        }
+
+        for (int i = 1; i <= first.Length; i++)
+        {
+            current[0] = i;
+            for (int j = 1; j <= second.Length; j++)
+            {
+                int substitution = previous[j - 1] + (first[i - 1] == second[j - 1] ? 0 : 1);
+                current[j] = Math.Min(Math.Min(previous[j] + 1, current[j - 1] + 1), substitution);
+            }
+
+            (previous, current) = (current, previous);
+        }
+
+        return previous[second.Length];
     }
 
     private static bool CanBeInheritedOrImplemented(INamedTypeSymbol type)

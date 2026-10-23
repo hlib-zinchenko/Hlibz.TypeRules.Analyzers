@@ -26,7 +26,7 @@ public sealed class SealTypeCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return WellKnownFixAllProviders.BatchFixer;
+        return RuleFixAllProvider.Batch(Descriptors.TypeMustBeSealedId);
     }
 
     /// <inheritdoc />

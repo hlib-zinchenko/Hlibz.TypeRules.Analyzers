@@ -125,7 +125,7 @@ public sealed class WrongNamespaceTests
         await VerifyAnalyzerAsync(
             configuration,
             source,
-            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+            ConfigurationError(
                 "rule set 'endpoints' has an invalid namespace_pattern 'App..Endpoints' (expected "
                 + "dot-separated names, with '*' for one segment and '**' for any number, "
                 + "alternatives separated by '|')"));

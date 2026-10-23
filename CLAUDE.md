@@ -51,17 +51,29 @@ needs `--project <path>` rather than a bare directory argument.
   `[NotNullWhen]`. Use `Substring`, sealed classes with constructors, `IndexOf`.
 - **`TypeRulesAnalyzer`** is one analyzer for every rule, because they share configuration
   parsing. Per compilation, `CompilationAnalyzer` caches one parsed `TypeRulesConfiguration` per
-  `AnalyzerConfigOptions` instance (options are per file) and reports each TR000 message once.
-  A type's options come from the file of its first declaration.
+  `AnalyzerConfigOptions` instance (options are per file) and reports each TR000 message once,
+  naming the first file by path (relative to `build_property.projectdir`) whose options have it.
+  That file is found over every syntax tree, not whichever was analyzed first, so the message is
+  deterministic. A type's options come from the file of its first declaration. Messages name
+  types through `TypeNames.Format` (`Foo<T>`, no namespace).
 - **`Configuration/ConfigurationParser`** reads `typerules.*` keys (arriving lowercased; values
   keep their case), groups them by rule set and resolves `match` entries with
-  `DocumentationCommentId`. A rule set with any error is dropped entirely. An unresolved type is an
-  error only if its containing namespace or type exists (probably a typo); otherwise it's silently
-  skipped, because one `.editorconfig` spans projects that can't all see every type.
+  `DocumentationCommentId`. A rule set with any error is dropped entirely, and so is one with
+  `enabled = false` (one with only `enabled` is an error: no such rule set is configured). An
+  unresolved type is an error only if its containing namespace or type exists (probably a typo,
+  so the closest name there by edit distance is suggested); otherwise it's silently skipped,
+  because one `.editorconfig` spans projects that can't all see every type. "Sets no constraint"
+  isn't reported for a rule set with an unknown option, which is likely the misspelled
+  constraint.
 - **`AccessScope`** models accessibility as flags for where a type can be seen from, because C#
   accessibility is only partially ordered (`protected` vs `internal`). "Exceeds the maximum" is
   `IsWithin` (a subset check), effective accessibility is the intersection along the containing
   types, and several rule sets' maximums combine by intersection too.
+- **One equivalence key per rule ID**, the ID itself, for every fix: each diagnostic still gets
+  its own change, but one Fix All covers the rule. `dotnet format` starts Fix All with the first
+  diagnostic's key, or null when that one has no fix, so `RuleFixAllProvider` wraps the batch
+  fixer to treat null as the rule's key; the TR104 and TR303 Fix Alls accept null themselves. Test
+  that with `Verifier.FixAllAsync`.
 - **Code fixes only fix when it's safe.** The TR101 fix picks the most permissive level within the
   maximum that's legal where the type is declared (no protected levels inside structs, static or
   sealed classes); the TR102 fix isn't offered when anything derives from the type or it declares
@@ -76,9 +88,9 @@ needs `--project <path>` rather than a bare directory argument.
   `ImportAdder`/`Simplifier`/`Formatter`, then normalizes to the source file's line endings,
   because those APIs use the workspace default. It has its own `FixAllProvider`: the batch fixer
   drops added documents, so it re-resolves each type by documentation ID and applies the fixes
-  one after another. It never touches a diagnostic without a state, and a null equivalence key
-  fixes both kinds: `dotnet format` passes the first diagnostic's key, null when that one has no
-  fix. The generated file takes the source file's encoding. Roslyn 4.8 has
+  one after another, both kinds in one pass, skipping diagnostics without a state. The generated
+  file takes the source file's encoding. The diagnostic's last argument says why an existing
+  `IFoo` doesn't count (not an interface, doesn't extend a matched one). Roslyn 4.8 has
   `ImportAdder.AddImportsAsync` with `Simplifier.AddImportsAnnotation`, not the newer
   `AddImportsFromSymbolAnnotationAsync`.
 - **`MemberRules`** (TR301, TR302) checks the properties and fields a matched type declares,
@@ -97,12 +109,18 @@ needs `--project <path>` rather than a bare directory argument.
   fields, `set` accessors (`init` is fine), stored mutable collections of any accessibility (via
   `MutableCollections`, including auto-property backing fields), and non-readonly structs. It's
   shallow on purpose. A `Problem` diagnostic property tells `MakeImmutableCodeFixProvider` which
-  of the four it is.
+  of the four it is. Its Fix All doesn't use the batch fixer, which merges fixes each checked on
+  its own: it annotates every target, then applies the fixes one after another, struct fixes
+  last, each checked against the previous ones' result, since a readonly struct only compiles
+  once its fields and setters are fixed.
 - **TR201** (`max_constructor_accessibility`) and **TR202** (`equality = value | identity`) live
   in `TypeRulesAnalyzer`. TR201 skips abstract types, a struct's implicit parameterless
   constructor and a record's implicit copy constructor, and reports the implicit default
   constructor and primary constructors on the type. Value equality is a record, a struct, or an
-  `Equals(object)` override anywhere below `object`; identity forbids records and structs.
+  `Equals(object)` override anywhere below `object`; identity forbids records and structs, and,
+  for a type matched through a class, an `Equals(object)` override or `IEquatable<T>` declared
+  on the type itself (each type below the matched class is analyzed on its own). Matched only
+  through interfaces, an `Equals` override may compare ids, so it isn't reported.
 - Code-fix helpers shared across fixes: `Accessibilities` (where protected levels are legal) and
   `DocumentCleanup` (imports, simplification, formatting, line-ending normalization).
 - **`Configuration/NamespacePattern`** (TR103) matches namespaces segment by segment: `*` is one

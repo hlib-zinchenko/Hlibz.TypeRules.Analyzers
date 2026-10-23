@@ -17,6 +17,7 @@ typerules.entities.require_sealed = true
 typerules.entities.max_setter_accessibility = private
 typerules.entities.readonly_collections = true
 typerules.entities.forbid_member_types = entities
+typerules.entities.equality = identity
 
 typerules.value-objects.match = T:Sample.IValueObject
 typerules.value-objects.require_sealed = true

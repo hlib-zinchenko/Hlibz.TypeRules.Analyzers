@@ -1,6 +1,7 @@
 using Hlibz.TypeRules.Analyzers.CodeFixes;
 
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.CodeAnalysis.Text;
 
 using static Hlibz.TypeRules.Analyzers.Tests.Verifier;
 
@@ -425,5 +426,109 @@ public sealed class TypeMustBeImmutableTests
         return Diagnostic(Descriptors.TypeMustBeImmutable)
             .WithLocation(location)
             .WithArguments(name, problem, "'value-objects'");
+    }
+
+    [Fact]
+    public async Task FixAll_WithMutableStruct_MakesItImmutableInOnePass()
+    {
+        // A readonly struct only compiles once its fields and setters are fixed, so the struct
+        // fix has to come after them, in the same pass.
+        string[] sources =
+        [
+            """
+            namespace App;
+
+            public struct Money : IValueObject
+            {
+                private decimal _amount;
+
+                public string Currency { get; set; }
+
+                public int Scale { get; private set; }
+            }
+            """,
+        ];
+
+        Dictionary<string, SourceText> documents =
+            await FixAllAsync<MakeImmutableCodeFixProvider>(ImmutableValueObjects, sources, null);
+
+        Assert.Equal(
+            """
+            namespace App;
+
+            public readonly struct Money : IValueObject
+            {
+                private readonly decimal _amount;
+
+                public string Currency { get; init; }
+
+                public int Scale { get; }
+            }
+            """,
+            documents["Test0.cs"].ToString());
+    }
+
+    [Fact]
+    public async Task FixAll_WithPositionalRecordStruct_MakesItReadOnly()
+    {
+        string[] sources =
+        [
+            """
+            namespace App;
+
+            public record struct Point(int X) : IValueObject;
+            """,
+        ];
+
+        Dictionary<string, SourceText> documents =
+            await FixAllAsync<MakeImmutableCodeFixProvider>(ImmutableValueObjects, sources, null);
+
+        Assert.Equal(
+            """
+            namespace App;
+
+            public readonly record struct Point(int X) : IValueObject;
+            """,
+            documents["Test0.cs"].ToString());
+    }
+
+    [Fact]
+    public async Task FixAll_WithStructModifiers_PutsReadOnlyBeforePartial()
+    {
+        string[] sources =
+        [
+            """
+            namespace App;
+
+            public partial struct Amount : IValueObject;
+
+            struct Count : IValueObject { }
+
+            internal static class Units
+            {
+                [System.Obsolete]
+                partial struct Unit : IValueObject;
+            }
+            """,
+        ];
+
+        Dictionary<string, SourceText> documents =
+            await FixAllAsync<MakeImmutableCodeFixProvider>(ImmutableValueObjects, sources, null);
+
+        Assert.Equal(
+            """
+            namespace App;
+
+            public readonly partial struct Amount : IValueObject;
+
+            readonly struct Count : IValueObject { }
+
+            internal static class Units
+            {
+                [System.Obsolete]
+                readonly partial struct Unit : IValueObject;
+            }
+            """,
+            documents["Test0.cs"].ToString());
     }
 }
