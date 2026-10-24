@@ -35,7 +35,7 @@ error TR304: 'Order.Customer' holds 'Customer', a type of rule set 'entities', w
 ## Install
 
 ```bash
-dotnet add package Hlibz.TypeRules.Analyzers --prerelease
+dotnet add package Hlibz.TypeRules.Analyzers
 ```
 
 It's a development dependency: it runs at build time and adds nothing to your output. Requires the
@@ -282,18 +282,18 @@ dotnet_code_quality.CA1710.additional_required_suffixes = T:MyApp.Api.IEndpoint-
 
 ## Versioning
 
-From 1.0.0, rule IDs and configuration keys are public contract:
+Rule IDs and configuration keys are public contract:
 
 - Rule IDs are never renumbered or reused.
 - Option names and their values are never renamed or removed outside a major release. An unknown
-  option is a TR000 error that drops its rule set, so a rename would break builds. New options
+  option is reported as TR000 and drops its rule set, so a rename would break builds. New options
   and values may be added.
 - A rule may report more in a minor or patch release when it was missing cases.
 - New rules only report once you configure them, so upgrading never adds diagnostics to a
   codebase that didn't opt in.
 
-Previews (`1.0.0-preview.N`) may still change options, though never rule IDs; the release notes
-list any change.
+A preview (`X.Y.Z-preview.N`) may still change the options it introduces, though never rule IDs;
+the release notes list any change.
 
 ## Contributing
 
