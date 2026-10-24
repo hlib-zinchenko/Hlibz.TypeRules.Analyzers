@@ -28,11 +28,8 @@ error TR304: 'Order.Customer' holds 'Customer', a type of rule set 'entities', w
 
 ## Install
 
-> **Not on NuGet yet.** The package will be published once the rule set settles. Until then, use
-> it from source (below).
-
 ```bash
-dotnet add package Hlibz.TypeRules.Analyzers
+dotnet add package Hlibz.TypeRules.Analyzers --prerelease
 ```
 
 It's a development dependency: it runs at build time and adds nothing to your output. Requires the
