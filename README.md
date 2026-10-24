@@ -1,6 +1,9 @@
 # Hlibz.TypeRules.Analyzers
 
 [![CI](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/actions/workflows/ci.yml/badge.svg)](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/Hlibz.TypeRules.Analyzers.svg)](https://www.nuget.org/packages/Hlibz.TypeRules.Analyzers)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Hlibz.TypeRules.Analyzers.svg)](https://www.nuget.org/packages/Hlibz.TypeRules.Analyzers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/LICENSE)
 
 Roslyn analyzers that enforce the **shape of a type based on what it inherits or implements**,
 configured in `.editorconfig`:
