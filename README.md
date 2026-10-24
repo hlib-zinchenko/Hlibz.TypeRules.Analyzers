@@ -1,3 +1,5 @@
+![Hlibz.TypeRules.Analyzers icon](https://raw.githubusercontent.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/main/docs/icon.png)
+
 # Hlibz.TypeRules.Analyzers
 
 [![CI](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/actions/workflows/ci.yml/badge.svg)](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/actions/workflows/ci.yml)
