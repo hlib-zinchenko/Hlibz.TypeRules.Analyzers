@@ -34,7 +34,7 @@ internal static class Immutability
     {
         List<string> requiring = matching
             .Where(ruleSet => ruleSet.RequireImmutable)
-            .Select(ruleSet => $"'{ruleSet.Name}'")
+            .Select(ruleSet => ruleSet.Name)
             .ToList();
 
         if (requiring.Count == 0)
@@ -42,7 +42,7 @@ internal static class Immutability
             return;
         }
 
-        string ruleSetNames = string.Join(", ", requiring);
+        string ruleSetNames = RuleSetNames.Format(requiring, "requires");
 
         if (type.TypeKind == TypeKind.Struct && !type.IsReadOnly)
         {
@@ -81,7 +81,7 @@ internal static class Immutability
                         SetAccessor,
                         setter.Locations.FirstOrDefault() ?? property.Locations[0],
                         [],
-                        $"{TypeNames.Format(type)}.{property.Name}",
+                        TypeNames.FormatMember(type, property),
                         "has a set accessor",
                         ruleSetNames);
                     break;

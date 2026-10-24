@@ -124,9 +124,9 @@ internal static class MemberRules
             setter.Locations.FirstOrDefault() ?? property.Locations[0],
             properties,
             isInit ? "init" : "set",
-            $"{TypeNames.Format(type)}.{property.Name}",
+            TypeNames.FormatMember(type, property),
             setterScope.ToDisplayString(),
-            FormatRuleSetNames(violated),
+            RuleSetNames.Format(violated, "allows"),
             combinedMaximum.ToDisplayString()));
     }
 
@@ -149,14 +149,11 @@ internal static class MemberRules
         context.ReportDiagnostic(Diagnostic.Create(
             Descriptors.MutableCollectionExposed,
             member.Locations[0],
-            $"{TypeNames.Format(type)}.{member.Name}",
+            TypeNames.FormatMember(type, member),
             memberType.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat),
-            FormatRuleSetNames(ruleSets.Select(ruleSet => ruleSet.Name).ToList())));
-    }
-
-    private static string FormatRuleSetNames(List<string> names)
-    {
-        return string.Join(", ", names.Select(name => $"'{name}'"));
+            RuleSetNames.Format(
+                ruleSets.Select(ruleSet => ruleSet.Name).ToList(),
+                "requires")));
     }
 
     /// <summary>

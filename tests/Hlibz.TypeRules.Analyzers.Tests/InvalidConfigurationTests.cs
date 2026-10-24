@@ -141,7 +141,7 @@ public sealed class InvalidConfigurationTests
             """,
             Diagnostic(Descriptors.TypeMustBeSealed)
                 .WithLocation(0)
-                .WithArguments("GetUsersEndpoint", "'endpoints'"));
+                .WithArguments("GetUsersEndpoint", "rule set 'endpoints'"));
     }
 
     [Fact]
@@ -224,7 +224,11 @@ public sealed class InvalidConfigurationTests
             source,
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("GetUsersHandler", "internal", "'handlers'", "private protected"));
+                .WithArguments(
+                    "GetUsersHandler",
+                    "internal",
+                    "rule set 'handlers' allows",
+                    "private protected"));
     }
 
     [Fact]
@@ -310,7 +314,7 @@ public sealed class InvalidConfigurationTests
             source,
             Diagnostic(Descriptors.TypeMustBeSealed)
                 .WithLocation(0)
-                .WithArguments("GetUsersEndpoint", "'endpoints'"));
+                .WithArguments("GetUsersEndpoint", "rule set 'endpoints'"));
     }
 
     [Fact]

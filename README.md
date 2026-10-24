@@ -12,8 +12,9 @@ configured in `.editorconfig`:
 
 Architecture-test libraries such as [ArchUnitNET](https://github.com/TNG/ArchUnitNET) and
 [NetArchTest](https://github.com/BenMorris/NetArchTest) check rules like these when the tests run.
-TypeRules checks them while you type: violations show up in the editor and fail the build, and
-most come with a code fix.
+TypeRules checks them while you type: violations show up in the editor as warnings, which fail the
+build with `TreatWarningsAsErrors` (as below) or when you raise their severity, and most come with
+a code fix.
 
 ```
 error TR101: 'ListUsersEndpoint' is public, but rule set 'endpoints' allows at most internal
@@ -128,7 +129,9 @@ dotnet_diagnostic.TR104.severity = none
 ```
 
 TR000 reports invalid configuration, and a rule set with an error is dropped entirely, so keep it
-at warning or higher: lowering it hides that your rules aren't running.
+at warning or higher: lowering it hides that your rules aren't running. Like any diagnostic without
+a source location, TR000 ignores severities set in `.editorconfig` sections: set it in a
+`.globalconfig`, or with `<WarningsAsErrors>TR000</WarningsAsErrors>` in the project file.
 
 ### Code fixes
 
@@ -175,7 +178,7 @@ digits, `_` and `-`.
 | `max_setter_accessibility` | Same values as `max_accessibility` | TR301: `set` and `init` accessors of properties the matched types declare can't be more accessible than this |
 | `allow_init` | `true` or `false` | TR301: exempt `init` accessors. Only valid with `max_setter_accessibility` |
 | `readonly_collections` | `true` or `false` | TR302: properties and fields visible outside the matched types can't have a mutable collection type |
-| `namespace_pattern` | Dot-separated names; `*` is one segment, `**` any number; alternatives separated by `\|` | TR103: matched types must be declared in a namespace matching one alternative, e.g. `**.Database.Configurations` |
+| `namespace_pattern` | Dot-separated names; `*` is one segment, `**` any number; alternatives separated by `\|` or `,` | TR103: matched types must be declared in a namespace matching one alternative, e.g. `**.Database.Configurations` |
 | `forbid_member_types` | Rule-set names, separated by `\|` or `,`; may name the rule set itself | TR304: fields and auto-properties of matched types can't hold types of those rule sets, directly or in collections. A rule set named here needs only `match` |
 | `allow_self_references` | `true` (default) or `false` | TR304: whether a type may still hold its own type (`Category.Parent`). Only valid with `forbid_member_types` |
 | `require_immutable` | `true` or `false` | TR303: matched types' instance fields must be readonly, their properties can't have `set` accessors (`init` is fine), their fields and auto-properties can't store mutable collections, and structs must be `readonly struct`s |
@@ -256,15 +259,17 @@ Some related checks already exist. Use these alongside TypeRules rather than exp
 
 | Check | Use |
 |---|---|
-| Type name suffix by base type (every `IEndpoint` ends in `Endpoint`) | Built-in [CA1710](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1710), configured as shown below |
-| Seal every internal type that has no subtypes | Built-in [CA1852](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1852). It's off in assemblies with `InternalsVisibleTo` unless you set `dotnet_code_quality.CA1852.ignore_internalsvisibleto = true` |
+| Type name suffix by base type (every `IEndpoint` ends in `Endpoint`) | Built-in [CA1710](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1710), enabled and configured as shown below |
+| Seal every internal type that has no subtypes | Built-in [CA1852](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1852), off by default: enable it with `dotnet_diagnostic.CA1852.severity = warning`. It also skips assemblies with `InternalsVisibleTo` unless you set `dotnet_code_quality.CA1852.ignore_internalsvisibleto = true` |
 | Banned APIs (`DateTime.Now`, ...) | [RS0030](https://github.com/dotnet/roslyn/blob/main/src/RoslynAnalyzers/Microsoft.CodeAnalysis.BannedApiAnalyzers/BannedApiAnalyzers.Help.md) from Microsoft.CodeAnalysis.BannedApiAnalyzers |
 | Layer and namespace dependencies | [NsDepCop](https://github.com/realvizu/NsDepCop), or ArchUnitNET/NetArchTest in tests |
 | EF Core model conventions (naming, precision, cascade deletes, ...), and a check of the navigations EF actually maps between aggregates, complementing TR304 | [Hlibz.EntityFrameworkCore.ModelRules](https://github.com/hlib-zinchenko/Hlibz.EntityFrameworkCore.ModelRules) |
 
-To require the `Endpoint`/`Handler` suffixes for the rule sets in the quick start, add:
+To require the `Endpoint`/`Handler` suffixes for the rule sets in the quick start, add (CA1710 is
+off by default, so the first line is needed):
 
 ```ini
+dotnet_diagnostic.CA1710.severity = warning
 dotnet_code_quality.CA1710.api_surface = all
 dotnet_code_quality.CA1710.additional_required_suffixes = T:MyApp.Api.IEndpoint->Endpoint|T:MyApp.Application.IRequestHandler`2->Handler
 ```
@@ -290,9 +295,10 @@ violations it must report exactly the diagnostics in `Violations/expected-diagno
 samples/Hlibz.TypeRules.Analyzers.Sample/verify-violations.sh
 ```
 
-CI checks both. A new rule needs a test class, a page in `docs/rules/`, a row in the tables above,
-and a case in the sample's `Violations/` with its line in `expected-diagnostics.txt`.
+CI checks both. A new rule needs an entry in `AnalyzerReleases.Unshipped.md`, a test class, a page
+in `docs/rules/`, a row in the tables above, and a case in the sample's `Violations/` with its line
+in `expected-diagnostics.txt`.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/LICENSE)

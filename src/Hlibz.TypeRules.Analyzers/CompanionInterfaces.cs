@@ -122,7 +122,7 @@ internal static class CompanionInterfaces
                 " or ",
                 toExtend.Select(matchedType => "'" + matchedType.ToDisplayString(
                     SymbolDisplayFormat.CSharpShortErrorMessageFormat) + "'")),
-            string.Join(", ", violated.Select(ruleSet => $"'{ruleSet.Name}'")),
+            RuleSetNames.Format(violated.Select(ruleSet => ruleSet.Name).ToList()),
             reason));
     }
 

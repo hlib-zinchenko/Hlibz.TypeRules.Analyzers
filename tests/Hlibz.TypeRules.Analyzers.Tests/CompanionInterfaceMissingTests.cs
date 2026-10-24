@@ -26,7 +26,7 @@ public sealed class CompanionInterfaceMissingTests
                 "GetUserHandler",
                 "IGetUserHandler",
                 "'IRequestHandler'",
-                "'handlers'",
+                "rule set 'handlers'",
                 reason);
     }
 
@@ -211,7 +211,7 @@ public sealed class CompanionInterfaceMissingTests
                     "GetOrderHandler",
                     "IGetOrderHandler",
                     "'IRequestHandler'",
-                    "'handlers'",
+                    "rule set 'handlers'",
                     ""));
     }
 
@@ -447,7 +447,12 @@ public sealed class CompanionInterfaceMissingTests
             fixedSource,
             Diagnostic(Descriptors.CompanionInterfaceMissing)
                 .WithLocation(0)
-                .WithArguments("Lookup<T>", "ILookup<T>", "'IRequestHandler'", "'handlers'", ""));
+                .WithArguments(
+                    "Lookup<T>",
+                    "ILookup<T>",
+                    "'IRequestHandler'",
+                    "rule set 'handlers'",
+                    ""));
     }
 
     [Fact]

@@ -38,16 +38,19 @@ public sealed class MutableCollectionExposedTests
             source,
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(0)
-                .WithArguments("Order.Notes", "List<string>", "'entities'"),
+                .WithArguments("Order.Notes", "List<string>", "rule set 'entities' requires"),
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(1)
-                .WithArguments("Order.Totals", "Dictionary<string, int>", "'entities'"),
+                .WithArguments(
+                    "Order.Totals",
+                    "Dictionary<string, int>",
+                    "rule set 'entities' requires"),
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(2)
-                .WithArguments("Order.codes", "int[]", "'entities'"),
+                .WithArguments("Order.codes", "int[]", "rule set 'entities' requires"),
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(3)
-                .WithArguments("Order.Lines", "Lines", "'entities'"));
+                .WithArguments("Order.Lines", "Lines", "rule set 'entities' requires"));
     }
 
     [Fact]
@@ -113,7 +116,7 @@ public sealed class MutableCollectionExposedTests
             fixedSource,
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(0)
-                .WithArguments("Order.Notes", "List<string>", "'entities'"));
+                .WithArguments("Order.Notes", "List<string>", "rule set 'entities' requires"));
     }
 
     [Fact]
@@ -144,7 +147,7 @@ public sealed class MutableCollectionExposedTests
             fixedSource,
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(0)
-                .WithArguments("Order.Tags", "HashSet<string>", "'entities'"));
+                .WithArguments("Order.Tags", "HashSet<string>", "rule set 'entities' requires"));
     }
 
     [Fact]
@@ -177,7 +180,10 @@ public sealed class MutableCollectionExposedTests
             fixedSource,
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(0)
-                .WithArguments("Order.Totals", "Dictionary<int, int>", "'entities'"));
+                .WithArguments(
+                    "Order.Totals",
+                    "Dictionary<int, int>",
+                    "rule set 'entities' requires"));
     }
 
     [Fact]
@@ -211,7 +217,7 @@ public sealed class MutableCollectionExposedTests
             sources,
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(0)
-                .WithArguments("Order.Notes", "List<string>", "'entities'"));
+                .WithArguments("Order.Notes", "List<string>", "rule set 'entities' requires"));
     }
 
     /// <summary>
@@ -238,7 +244,7 @@ public sealed class MutableCollectionExposedTests
             source,
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(0)
-                .WithArguments("Order.Tags", "HashSet<string>", "'entities'"));
+                .WithArguments("Order.Tags", "HashSet<string>", "rule set 'entities' requires"));
     }
 
     [Fact]
@@ -264,12 +270,12 @@ public sealed class MutableCollectionExposedTests
             source,
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(0)
-                .WithArguments("Order.Legacy", "ArrayList", "'entities'"),
+                .WithArguments("Order.Legacy", "ArrayList", "rule set 'entities' requires"),
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(1)
-                .WithArguments("Order.a", "List<int>", "'entities'"),
+                .WithArguments("Order.a", "List<int>", "rule set 'entities' requires"),
             Diagnostic(Descriptors.MutableCollectionExposed)
                 .WithLocation(2)
-                .WithArguments("Order.b", "List<int>", "'entities'"));
+                .WithArguments("Order.b", "List<int>", "rule set 'entities' requires"));
     }
 }

@@ -239,7 +239,7 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                 properties,
                 TypeNames.Format(type),
                 effective.ToDisplayString(),
-                FormatRuleSetNames(violated),
+                RuleSetNames.Format(violated, "allows"),
                 combinedMaximum.ToDisplayString()));
         }
 
@@ -271,7 +271,7 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                 type.Locations[0],
                 type.Locations.Skip(1),
                 TypeNames.Format(type),
-                FormatRuleSetNames(requiring)));
+                RuleSetNames.Format(requiring)));
         }
 
         /// <summary>
@@ -346,7 +346,9 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                     type.Locations.Skip(1),
                     TypeNames.Format(type),
                     problem,
-                    FormatRuleSetNames(requiring.Select(ruleSet => ruleSet.Name).ToList()),
+                    RuleSetNames.Format(
+                        requiring.Select(ruleSet => ruleSet.Name).ToList(),
+                        "requires"),
                     required == Equality.Value ? "value" : "identity"));
             }
         }
@@ -495,7 +497,7 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
                     properties,
                     constructor.ToDisplayString(ConstructorFormat),
                     scope.ToDisplayString(),
-                    FormatRuleSetNames(violated),
+                    RuleSetNames.Format(violated, "allows"),
                     combinedMaximum.ToDisplayString()));
             }
         }
@@ -505,11 +507,6 @@ public sealed class TypeRulesAnalyzer : DiagnosticAnalyzer
             return type.IsRecord
                 && constructor.Parameters.Length == 1
                 && SymbolEqualityComparer.Default.Equals(constructor.Parameters[0].Type, type);
-        }
-
-        private static string FormatRuleSetNames(List<string> names)
-        {
-            return string.Join(", ", names.Select(name => $"'{name}'"));
         }
     }
 }

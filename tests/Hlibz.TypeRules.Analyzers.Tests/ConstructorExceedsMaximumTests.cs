@@ -149,7 +149,7 @@ public sealed class ConstructorExceedsMaximumTests
                 .WithArguments(
                     "Order()",
                     "public",
-                    "'aggregates', 'entities'",
+                    "rule sets 'aggregates' and 'entities' allow",
                     "private protected"));
     }
 
@@ -260,6 +260,6 @@ public sealed class ConstructorExceedsMaximumTests
     {
         return Diagnostic(Descriptors.ConstructorExceedsMaximum)
             .WithLocation(location)
-            .WithArguments(name, accessibility, "'aggregates'", "private");
+            .WithArguments(name, accessibility, "rule set 'aggregates' allows", "private");
     }
 }

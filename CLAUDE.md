@@ -55,7 +55,10 @@ needs `--project <path>` rather than a bare directory argument.
   naming the first file by path (relative to `build_property.projectdir`) whose options have it.
   That file is found over every syntax tree, not whichever was analyzed first, so the message is
   deterministic. A type's options come from the file of its first declaration. Messages name
-  types through `TypeNames.Format` (`Foo<T>`, no namespace).
+  types through `TypeNames.Format` (`Foo<T>`, no namespace), members through
+  `TypeNames.FormatMember` (`Foo.this[int]` for indexers), and violated rule sets through
+  `RuleSetNames.Format`, which carries the verb so it agrees in number (`rule sets 'a' and 'b'
+  allow`).
 - **`Configuration/ConfigurationParser`** reads `typerules.*` keys (arriving lowercased; values
   keep their case), groups them by rule set and resolves `match` entries with
   `DocumentationCommentId`. A rule set with any error is dropped entirely, and so is one with
@@ -176,7 +179,9 @@ and fails on anything missing or extra, and on any C# compile error in the viola
 
 `.github/workflows/release.yml` runs on a pushed `vX.Y.Z` tag (or `vX.Y.Z-preview.N`). It builds,
 tests, packs `src/Hlibz.TypeRules.Analyzers.Package` with `-p:Version` from the tag, and publishes
-through NuGet Trusted Publishing (OIDC, no API key). It uses the `release` GitHub Environment,
+through NuGet Trusted Publishing (OIDC, no API key), then creates the GitHub Release (generated
+notes, the `.nupkg` attached, marked prerelease for a suffixed tag) that the package's release
+notes link to. It uses the `release` GitHub Environment,
 which must match the Environment on the nuget.org trusted-publishing policy, and a
 `${{ secrets.NUGET_USER }}` repo secret with the nuget.org profile username.
 

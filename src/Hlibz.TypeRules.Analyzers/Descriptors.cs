@@ -40,7 +40,7 @@ internal static class Descriptors
     public static readonly DiagnosticDescriptor AccessibilityExceedsMaximum = new(
         AccessibilityExceedsMaximumId,
         title: "Type is more accessible than its rule set allows",
-        messageFormat: "'{0}' is {1}, but rule set {2} allows at most {3}",
+        messageFormat: "'{0}' is {1}, but {2} at most {3}",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -51,7 +51,7 @@ internal static class Descriptors
     public static readonly DiagnosticDescriptor TypeMustBeSealed = new(
         TypeMustBeSealedId,
         title: "Type must be sealed",
-        messageFormat: "'{0}' must be sealed, as required by rule set {1}",
+        messageFormat: "'{0}' must be sealed, as required by {1}",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -76,7 +76,7 @@ internal static class Descriptors
         CompanionInterfaceMissingId,
         title: "Type must implement its companion interface",
         messageFormat: "'{0}' must implement a companion interface '{1}' that extends {2}, as "
-            + "required by rule set {3}{4}",
+            + "required by {3}{4}",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -92,7 +92,7 @@ internal static class Descriptors
     public static readonly DiagnosticDescriptor ConstructorExceedsMaximum = new(
         ConstructorExceedsMaximumId,
         title: "Constructor is more accessible than its rule set allows",
-        messageFormat: "Constructor '{0}' is {1}, but rule set {2} allows at most {3}",
+        messageFormat: "Constructor '{0}' is {1}, but {2} at most {3}",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -106,7 +106,7 @@ internal static class Descriptors
     public static readonly DiagnosticDescriptor WrongEquality = new(
         WrongEqualityId,
         title: "Type has the wrong equality semantics",
-        messageFormat: "'{0}' {1}, but rule set {2} requires {3} equality",
+        messageFormat: "'{0}' {1}, but {2} {3} equality",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -124,7 +124,7 @@ internal static class Descriptors
     public static readonly DiagnosticDescriptor SetterExceedsMaximum = new(
         SetterExceedsMaximumId,
         title: "Setter is more accessible than its rule set allows",
-        messageFormat: "The {0} accessor of '{1}' is {2}, but rule set {3} allows at most {4}",
+        messageFormat: "The {0} accessor of '{1}' is {2}, but {3} at most {4}",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -136,8 +136,8 @@ internal static class Descriptors
     public static readonly DiagnosticDescriptor MutableCollectionExposed = new(
         MutableCollectionExposedId,
         title: "Mutable collection is exposed",
-        messageFormat: "'{0}' exposes the mutable collection type '{1}', but rule set {2} "
-            + "requires read-only collections",
+        messageFormat: "'{0}' exposes the mutable collection type '{1}', but {2} "
+            + "read-only collections",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -151,7 +151,7 @@ internal static class Descriptors
     public static readonly DiagnosticDescriptor TypeMustBeImmutable = new(
         TypeMustBeImmutableId,
         title: "Type must be immutable",
-        messageFormat: "'{0}' {1}, but rule set {2} requires immutable types",
+        messageFormat: "'{0}' {1}, but {2} immutable types",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,

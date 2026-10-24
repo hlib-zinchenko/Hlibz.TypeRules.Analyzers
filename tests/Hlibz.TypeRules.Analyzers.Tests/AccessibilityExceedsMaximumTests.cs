@@ -25,7 +25,11 @@ public sealed class AccessibilityExceedsMaximumTests
             source,
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("GetUsersEndpoint", "public", "'endpoints'", "internal"));
+                .WithArguments(
+                    "GetUsersEndpoint",
+                    "public",
+                    "rule set 'endpoints' allows",
+                    "internal"));
     }
 
     [Fact]
@@ -58,10 +62,14 @@ public sealed class AccessibilityExceedsMaximumTests
             source,
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("EndpointBase", "public", "'endpoints'", "internal"),
+                .WithArguments("EndpointBase", "public", "rule set 'endpoints' allows", "internal"),
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(1)
-                .WithArguments("GetUsersEndpoint", "public", "'endpoints'", "internal"));
+                .WithArguments(
+                    "GetUsersEndpoint",
+                    "public",
+                    "rule set 'endpoints' allows",
+                    "internal"));
     }
 
     [Fact]
@@ -84,7 +92,7 @@ public sealed class AccessibilityExceedsMaximumTests
             source,
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("Order", "public", "'entities'", "internal"));
+                .WithArguments("Order", "public", "rule set 'entities' allows", "internal"));
     }
 
     [Fact]
@@ -131,7 +139,11 @@ public sealed class AccessibilityExceedsMaximumTests
             source,
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("GetUsersEndpoint", "protected", "'endpoints'", "internal"));
+                .WithArguments(
+                    "GetUsersEndpoint",
+                    "protected",
+                    "rule set 'endpoints' allows",
+                    "internal"));
     }
 
     [Fact]
@@ -148,7 +160,7 @@ public sealed class AccessibilityExceedsMaximumTests
             source,
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("Ping", "public", "'endpoints'", "internal"));
+                .WithArguments("Ping", "public", "rule set 'endpoints' allows", "internal"));
     }
 
     [Fact]
@@ -171,7 +183,36 @@ public sealed class AccessibilityExceedsMaximumTests
             source,
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("GetUsers", "public", "'endpoints'", "internal"));
+                .WithArguments("GetUsers", "public", "rule set 'endpoints' allows", "internal"));
+    }
+
+    [Fact]
+    public async Task Analyze_WithSeveralViolatedRuleSets_NamesThemAll()
+    {
+        const string configuration = """
+            typerules.apis.match = T:App.IEndpoint
+            typerules.apis.max_accessibility = internal
+            typerules.endpoints.match = T:App.IEndpoint
+            typerules.endpoints.max_accessibility = internal
+            typerules.handlers.match = T:App.IHandler
+            typerules.handlers.max_accessibility = internal
+            """;
+        const string source = """
+            namespace App;
+
+            public sealed class {|#0:GetUsers|} : IEndpoint, IHandler { }
+            """;
+
+        await VerifyAnalyzerAsync(
+            configuration,
+            source,
+            Diagnostic(Descriptors.AccessibilityExceedsMaximum)
+                .WithLocation(0)
+                .WithArguments(
+                    "GetUsers",
+                    "public",
+                    "rule sets 'apis', 'endpoints' and 'handlers' allow",
+                    "internal"));
     }
 
     [Fact]
@@ -219,7 +260,11 @@ public sealed class AccessibilityExceedsMaximumTests
             fixedSource,
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("GetUsersEndpoint", "public", "'endpoints'", "internal"));
+                .WithArguments(
+                    "GetUsersEndpoint",
+                    "public",
+                    "rule set 'endpoints' allows",
+                    "internal"));
     }
 
     [Fact]
@@ -259,7 +304,11 @@ public sealed class AccessibilityExceedsMaximumTests
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
                 .WithLocation(1)
-                .WithArguments("GetUsersEndpoint", "public", "'endpoints'", "internal"));
+                .WithArguments(
+                    "GetUsersEndpoint",
+                    "public",
+                    "rule set 'endpoints' allows",
+                    "internal"));
     }
 
     [Fact]
@@ -292,7 +341,11 @@ public sealed class AccessibilityExceedsMaximumTests
             fixedSource,
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("GetUsersEndpoint", "public", "'endpoints'", "protected internal"));
+                .WithArguments(
+                    "GetUsersEndpoint",
+                    "public",
+                    "rule set 'endpoints' allows",
+                    "protected internal"));
     }
 
     [Fact]
@@ -314,7 +367,11 @@ public sealed class AccessibilityExceedsMaximumTests
             source,
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("GetUsersEndpoint", "internal", "'endpoints'", "private"));
+                .WithArguments(
+                    "GetUsersEndpoint",
+                    "internal",
+                    "rule set 'endpoints' allows",
+                    "private"));
     }
 
     [Fact]
@@ -331,6 +388,10 @@ public sealed class AccessibilityExceedsMaximumTests
             source,
             Diagnostic(Descriptors.AccessibilityExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("GetEndpoint<TItem, TKey>", "public", "'endpoints'", "internal"));
+                .WithArguments(
+                    "GetEndpoint<TItem, TKey>",
+                    "public",
+                    "rule set 'endpoints' allows",
+                    "internal"));
     }
 }

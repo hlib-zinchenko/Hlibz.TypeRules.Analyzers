@@ -27,7 +27,7 @@ public sealed class TypeMustBeSealedTests
             source,
             Diagnostic(Descriptors.TypeMustBeSealed)
                 .WithLocation(0)
-                .WithArguments("GetUsersEndpoint", "'endpoints'"));
+                .WithArguments("GetUsersEndpoint", "rule set 'endpoints'"));
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public sealed class TypeMustBeSealedTests
             fixedSource,
             Diagnostic(Descriptors.TypeMustBeSealed)
                 .WithLocation(0)
-                .WithArguments("GetUsersEndpoint", "'endpoints'"));
+                .WithArguments("GetUsersEndpoint", "rule set 'endpoints'"));
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public sealed class TypeMustBeSealedTests
             fixedSource,
             Diagnostic(Descriptors.TypeMustBeSealed)
                 .WithLocation(0)
-                .WithArguments("GetUsers", "'endpoints'"));
+                .WithArguments("GetUsers", "rule set 'endpoints'"));
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public sealed class TypeMustBeSealedTests
             source,
             Diagnostic(Descriptors.TypeMustBeSealed)
                 .WithLocation(0)
-                .WithArguments("EndpointBase", "'endpoints'"));
+                .WithArguments("EndpointBase", "rule set 'endpoints'"));
     }
 
     [Fact]
@@ -157,10 +157,10 @@ public sealed class TypeMustBeSealedTests
             source,
             Diagnostic(Descriptors.TypeMustBeSealed)
                 .WithLocation(0)
-                .WithArguments("GetUsersEndpoint", "'endpoints'"),
+                .WithArguments("GetUsersEndpoint", "rule set 'endpoints'"),
             Diagnostic(Descriptors.TypeMustBeSealed)
                 .WithLocation(1)
-                .WithArguments("GetOrdersEndpoint", "'endpoints'"));
+                .WithArguments("GetOrdersEndpoint", "rule set 'endpoints'"));
     }
 
     [Fact]

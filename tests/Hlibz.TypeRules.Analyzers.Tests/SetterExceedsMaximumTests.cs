@@ -28,7 +28,37 @@ public sealed class SetterExceedsMaximumTests
             source,
             Diagnostic(Descriptors.SetterExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("set", "Order.Status", "public", "'entities'", "private"));
+                .WithArguments(
+                    "set",
+                    "Order.Status",
+                    "public",
+                    "rule set 'entities' allows",
+                    "private"));
+    }
+
+    [Fact]
+    public async Task Analyze_WithIndexerSetter_NamesItWithParameterTypes()
+    {
+        const string source = """
+            namespace App;
+
+            public sealed class Order : Entity<int>
+            {
+                public string this[int line, string key] { get => ""; {|#0:set|} { } }
+            }
+            """;
+
+        await VerifyAnalyzerAsync(
+            PrivateSetters,
+            source,
+            Diagnostic(Descriptors.SetterExceedsMaximum)
+                .WithLocation(0)
+                .WithArguments(
+                    "set",
+                    "Order.this[int, string]",
+                    "public",
+                    "rule set 'entities' allows",
+                    "private"));
     }
 
     [Fact]
@@ -87,7 +117,12 @@ public sealed class SetterExceedsMaximumTests
             source,
             Diagnostic(Descriptors.SetterExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("init", "Order.Status", "public", "'entities'", "private"));
+                .WithArguments(
+                    "init",
+                    "Order.Status",
+                    "public",
+                    "rule set 'entities' allows",
+                    "private"));
         await VerifyAnalyzerAsync(allowInit, source.Replace("{|#0:init|}", "init"));
     }
 
@@ -120,7 +155,12 @@ public sealed class SetterExceedsMaximumTests
             source,
             Diagnostic(Descriptors.SetterExceedsMaximum)
                 .WithLocation(1)
-                .WithArguments("set", "Document.Title", "public", "'entities'", "private"));
+                .WithArguments(
+                    "set",
+                    "Document.Title",
+                    "public",
+                    "rule set 'entities' allows",
+                    "private"));
     }
 
     [Fact]
@@ -188,10 +228,20 @@ public sealed class SetterExceedsMaximumTests
             fixedSource,
             Diagnostic(Descriptors.SetterExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("set", "Order.Status", "public", "'entities'", "private"),
+                .WithArguments(
+                    "set",
+                    "Order.Status",
+                    "public",
+                    "rule set 'entities' allows",
+                    "private"),
             Diagnostic(Descriptors.SetterExceedsMaximum)
                 .WithLocation(1)
-                .WithArguments("set", "Order.Total", "internal", "'entities'", "private"));
+                .WithArguments(
+                    "set",
+                    "Order.Total",
+                    "internal",
+                    "rule set 'entities' allows",
+                    "private"));
     }
 
     [Fact]
@@ -224,7 +274,12 @@ public sealed class SetterExceedsMaximumTests
             fixedSource,
             Diagnostic(Descriptors.SetterExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("set", "Order.Status", "public", "'entities'", "protected"));
+                .WithArguments(
+                    "set",
+                    "Order.Status",
+                    "public",
+                    "rule set 'entities' allows",
+                    "protected"));
     }
 
     [Fact]
@@ -254,13 +309,28 @@ public sealed class SetterExceedsMaximumTests
             source,
             Diagnostic(Descriptors.SetterExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("set", "Order.Number", "public", "'entities'", "private"),
+                .WithArguments(
+                    "set",
+                    "Order.Number",
+                    "public",
+                    "rule set 'entities' allows",
+                    "private"),
             Diagnostic(Descriptors.SetterExceedsMaximum)
                 .WithLocation(1)
-                .WithArguments("set", "Order.Status", "public", "'entities'", "private"),
+                .WithArguments(
+                    "set",
+                    "Order.Status",
+                    "public",
+                    "rule set 'entities' allows",
+                    "private"),
             Diagnostic(Descriptors.SetterExceedsMaximum)
                 .WithLocation(2)
-                .WithArguments("set", "Order.Note", "public", "'entities'", "private"));
+                .WithArguments(
+                    "set",
+                    "Order.Note",
+                    "public",
+                    "rule set 'entities' allows",
+                    "private"));
     }
 
     [Fact]
@@ -282,7 +352,12 @@ public sealed class SetterExceedsMaximumTests
             source,
             Diagnostic(Descriptors.SetterExceedsMaximum)
                 .WithLocation(0)
-                .WithArguments("init", "Ping.Status", "public", "'endpoints'", "private"));
+                .WithArguments(
+                    "init",
+                    "Ping.Status",
+                    "public",
+                    "rule set 'endpoints' allows",
+                    "private"));
     }
 
     [Fact]

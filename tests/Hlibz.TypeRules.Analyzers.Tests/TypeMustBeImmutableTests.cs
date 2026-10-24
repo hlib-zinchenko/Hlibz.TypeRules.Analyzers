@@ -425,7 +425,7 @@ public sealed class TypeMustBeImmutableTests
     {
         return Diagnostic(Descriptors.TypeMustBeImmutable)
             .WithLocation(location)
-            .WithArguments(name, problem, "'value-objects'");
+            .WithArguments(name, problem, "rule set 'value-objects' requires");
     }
 
     [Fact]

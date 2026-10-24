@@ -33,7 +33,11 @@ public sealed class WrongEqualityTests
             source,
             Diagnostic(Descriptors.WrongEquality)
                 .WithLocation(0)
-                .WithArguments("Money", "compares by reference", "'value-objects'", "value"));
+                .WithArguments(
+                    "Money",
+                    "compares by reference",
+                    "rule set 'value-objects' requires",
+                    "value"));
     }
 
     [Fact]
@@ -81,7 +85,11 @@ public sealed class WrongEqualityTests
             source,
             Diagnostic(Descriptors.WrongEquality)
                 .WithLocation(0)
-                .WithArguments("Money", "compares by reference", "'value-objects'", "value"));
+                .WithArguments(
+                    "Money",
+                    "compares by reference",
+                    "rule set 'value-objects' requires",
+                    "value"));
     }
 
     [Fact]
@@ -102,13 +110,25 @@ public sealed class WrongEqualityTests
             source,
             Diagnostic(Descriptors.WrongEquality)
                 .WithLocation(0)
-                .WithArguments("Order", "is a record", "'aggregates'", "identity"),
+                .WithArguments(
+                    "Order",
+                    "is a record",
+                    "rule set 'aggregates' requires",
+                    "identity"),
             Diagnostic(Descriptors.WrongEquality)
                 .WithLocation(1)
-                .WithArguments("Invoice", "is a struct", "'aggregates'", "identity"),
+                .WithArguments(
+                    "Invoice",
+                    "is a struct",
+                    "rule set 'aggregates' requires",
+                    "identity"),
             Diagnostic(Descriptors.WrongEquality)
                 .WithLocation(2)
-                .WithArguments("Shipment", "is a record struct", "'aggregates'", "identity"));
+                .WithArguments(
+                    "Shipment",
+                    "is a record struct",
+                    "rule set 'aggregates' requires",
+                    "identity"));
     }
 
     [Fact]
@@ -145,7 +165,11 @@ public sealed class WrongEqualityTests
             source,
             Diagnostic(Descriptors.WrongEquality)
                 .WithLocation(0)
-                .WithArguments("Order", "is a record", "'aggregates'", "identity"));
+                .WithArguments(
+                    "Order",
+                    "is a record",
+                    "rule set 'aggregates' requires",
+                    "identity"));
     }
 
     private const string EntityIdentity = """
@@ -181,13 +205,17 @@ public sealed class WrongEqualityTests
             source,
             Diagnostic(Descriptors.WrongEquality)
                 .WithLocation(0)
-                .WithArguments("Order", "overrides Equals(object)", "'entities'", "identity"),
+                .WithArguments(
+                    "Order",
+                    "overrides Equals(object)",
+                    "rule set 'entities' requires",
+                    "identity"),
             Diagnostic(Descriptors.WrongEquality)
                 .WithLocation(1)
                 .WithArguments(
                     "Invoice",
                     "implements IEquatable<Invoice>",
-                    "'entities'",
+                    "rule set 'entities' requires",
                     "identity"));
     }
 }

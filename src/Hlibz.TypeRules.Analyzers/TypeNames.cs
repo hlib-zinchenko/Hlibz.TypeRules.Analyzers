@@ -17,4 +17,18 @@ internal static class TypeNames
     {
         return type.ToDisplayString(NameFormat);
     }
+
+    /// <summary>
+    /// A member as <c>Order.Lines</c>, or <c>Order.this[int]</c> for an indexer.
+    /// </summary>
+    public static string FormatMember(INamedTypeSymbol type, ISymbol member)
+    {
+        string name = member is IPropertySymbol { IsIndexer: true } indexer
+            ? "this[" + string.Join(", ", indexer.Parameters.Select(parameter =>
+                parameter.Type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat)))
+                + "]"
+            : member.Name;
+
+        return $"{Format(type)}.{name}";
+    }
 }
