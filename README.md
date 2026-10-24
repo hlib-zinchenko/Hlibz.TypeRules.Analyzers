@@ -112,12 +112,23 @@ created and compared, TR3xx the state a type stores.
 | [TR303](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR303.md) | Type must be immutable: readonly fields, no setters, no mutable collections, readonly structs | `require_immutable` | Add `readonly`, remove the setter or make it `init` |
 | [TR304](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR304.md) | Type holds a reference to a forbidden type, e.g. one aggregate root holding another | `forbid_member_types` | — |
 
-All rules are warnings by default. With `TreatWarningsAsErrors`, they fail the build. Change a
-rule's severity the usual way:
+All rules are warnings by default, and a rule reports nothing until you configure a rule set for
+it. With `TreatWarningsAsErrors`, they fail the build. Change a rule's severity the usual way, in
+`.editorconfig`:
 
 ```ini
+# Fail the build on this rule
 dotnet_diagnostic.TR102.severity = error
+
+# Show it in the IDE only, not in build output
+dotnet_diagnostic.TR103.severity = suggestion
+
+# Turn it off
+dotnet_diagnostic.TR104.severity = none
 ```
+
+TR000 reports invalid configuration, and a rule set with an error is dropped entirely, so keep it
+at warning or higher: lowering it hides that your rules aren't running.
 
 ### Code fixes
 
