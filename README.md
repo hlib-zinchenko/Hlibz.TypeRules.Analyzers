@@ -256,7 +256,8 @@ values, types that don't resolve, types nothing can inherit from. A rule set wit
 ignored entirely rather than half-applied. TR000 has no source location, because it points at
 configuration, not code, so it appears in build output rather than on a line in the editor. It
 names the first file the broken settings apply to, so you know which `.editorconfig` to look at,
-and suggests the closest type name for a `match` type that doesn't exist.
+and suggests the closest known option for an unknown one, and the closest type name for a `match`
+type that doesn't exist.
 
 ## What TypeRules doesn't do
 

@@ -15,6 +15,12 @@ public sealed class InvalidConfigurationTests
         public class GetUsersEndpoint : IEndpoint { }
         """;
 
+    private const string KnownOptions =
+        "match, max_accessibility, require_sealed, require_companion_interface, "
+        + "max_setter_accessibility, allow_init, require_readonly_collections, namespace_pattern, "
+        + "forbid_member_types, allow_self_references, require_immutable, equality, "
+        + "max_constructor_accessibility, enabled";
+
     [Fact]
     public async Task Parse_WithUnknownOption_ReportsTR000AndIgnoresRuleSet()
     {
@@ -29,11 +35,7 @@ public sealed class InvalidConfigurationTests
             PublicUnsealedEndpoint,
             ConfigurationError(
                 "unknown option 'require_seald' in rule set 'endpoints' "
-                + "(known options: match, max_accessibility, require_sealed, "
-                + "require_companion_interface, max_setter_accessibility, allow_init, "
-                + "require_readonly_collections, namespace_pattern, forbid_member_types, "
-                + "allow_self_references, require_immutable, equality, "
-                + "max_constructor_accessibility, enabled)"));
+                + "(did you mean 'require_sealed'? Known options: " + KnownOptions + ")"));
     }
 
     [Fact]
@@ -263,6 +265,60 @@ public sealed class InvalidConfigurationTests
     }
 
     [Fact]
+    public async Task Parse_WithOptionRenamedSincePreview1_SuggestsTheNewName()
+    {
+        const string configuration = """
+            typerules.handlers.match = T:App.IHandler
+            typerules.handlers.companion_interface = true
+            typerules.handlers.readonly_collections = true
+            """;
+
+        await VerifyAnalyzerAsync(
+            configuration,
+            PublicUnsealedEndpoint,
+            ConfigurationError(
+                "unknown option 'companion_interface' in rule set 'handlers' "
+                + "(did you mean 'require_companion_interface'? Known options: " + KnownOptions
+                + ")"),
+            ConfigurationError(
+                "unknown option 'readonly_collections' in rule set 'handlers' "
+                + "(did you mean 'require_readonly_collections'? Known options: " + KnownOptions
+                + ")"));
+    }
+
+    [Fact]
+    public async Task Parse_WithOptionNamingPartOfAKnownOne_SuggestsTheClosest()
+    {
+        const string configuration = """
+            typerules.endpoints.match = T:App.IEndpoint
+            typerules.endpoints.accessibility = internal
+            """;
+
+        await VerifyAnalyzerAsync(
+            configuration,
+            PublicUnsealedEndpoint,
+            ConfigurationError(
+                "unknown option 'accessibility' in rule set 'endpoints' "
+                + "(did you mean 'max_accessibility'? Known options: " + KnownOptions + ")"));
+    }
+
+    [Fact]
+    public async Task Parse_WithUnrelatedUnknownOption_SuggestsNothing()
+    {
+        const string configuration = """
+            typerules.endpoints.match = T:App.IEndpoint
+            typerules.endpoints.colour = red
+            """;
+
+        await VerifyAnalyzerAsync(
+            configuration,
+            PublicUnsealedEndpoint,
+            ConfigurationError(
+                "unknown option 'colour' in rule set 'endpoints' (known options: " + KnownOptions
+                + ")"));
+    }
+
+    [Fact]
     public async Task Parse_WithMisspelledOnlyConstraint_ReportsOnlyTheUnknownOption()
     {
         const string configuration = """
@@ -275,11 +331,7 @@ public sealed class InvalidConfigurationTests
             PublicUnsealedEndpoint,
             ConfigurationError(
                 "unknown option 'require_seald' in rule set 'endpoints' "
-                + "(known options: match, max_accessibility, require_sealed, "
-                + "require_companion_interface, max_setter_accessibility, allow_init, "
-                + "require_readonly_collections, namespace_pattern, forbid_member_types, "
-                + "allow_self_references, require_immutable, equality, "
-                + "max_constructor_accessibility, enabled)"));
+                + "(did you mean 'require_sealed'? Known options: " + KnownOptions + ")"));
     }
 
     [Fact]

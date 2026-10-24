@@ -154,9 +154,11 @@ internal static class ConfigurationParser
             if (Array.IndexOf(KnownOptions, option) < 0)
             {
                 hasUnknownOption = true;
+                string? suggestion = SuggestOption(option);
                 errors.Add(
-                    $"unknown option '{option}' in rule set '{name}' "
-                    + $"(known options: {string.Join(", ", KnownOptions)})");
+                    $"unknown option '{option}' in rule set '{name}' ("
+                    + (suggestion is null ? "known" : $"did you mean '{suggestion}'? Known")
+                    + $" options: {string.Join(", ", KnownOptions)})");
             }
         }
 
@@ -537,6 +539,35 @@ internal static class ConfigurationParser
             .ThenBy(candidate => candidate.Id, StringComparer.Ordinal)
             .Select(candidate => candidate.Id)
             .FirstOrDefault();
+    }
+
+    /// <summary>
+    /// The known option closest to <paramref name="option"/>: a likely typo (within the edit
+    /// distance <see cref="SuggestType"/> allows), or one that contains it or is contained in it as
+    /// whole <c>_</c>-separated words, as a renamed option such as <c>companion_interface</c> (now
+    /// <c>require_companion_interface</c>) is. Null if none is close.
+    /// </summary>
+    private static string? SuggestOption(string option)
+    {
+        int maximumDistance = Math.Max(2, option.Length / 3);
+        return KnownOptions
+            .Select(known => (Known: known, Distance: Distance(option, known)))
+            .Where(candidate => candidate.Distance <= maximumDistance
+                || ContainsWords(candidate.Known, option)
+                || ContainsWords(option, candidate.Known))
+            .OrderBy(candidate => candidate.Distance)
+            .ThenBy(candidate => candidate.Known, StringComparer.Ordinal)
+            .Select(candidate => candidate.Known)
+            .FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Whether <paramref name="words"/> occurs in <paramref name="text"/> as whole
+    /// <c>_</c>-separated words: <c>sealed</c> does in <c>require_sealed</c>, <c>seal</c> doesn't.
+    /// </summary>
+    private static bool ContainsWords(string text, string words)
+    {
+        return ("_" + text + "_").IndexOf("_" + words + "_", StringComparison.Ordinal) >= 0;
     }
 
     /// <summary>The Levenshtein distance between two strings.</summary>

@@ -67,7 +67,9 @@ needs `--project <path>` rather than a bare directory argument.
   so the closest name there by edit distance is suggested); otherwise it's silently skipped,
   because one `.editorconfig` spans projects that can't all see every type. "Sets no constraint"
   isn't reported for a rule set with an unknown option, which is likely the misspelled
-  constraint.
+  constraint. An unknown option gets the closest known one suggested: within the same edit
+  distance as types, or containing it (or contained in it) as whole `_`-separated words, which
+  catches renames like `companion_interface` to `require_companion_interface`.
 - **`AccessScope`** models accessibility as flags for where a type can be seen from, because C#
   accessibility is only partially ordered (`protected` vs `internal`). "Exceeds the maximum" is
   `IsWithin` (a subset check), effective accessibility is the intersection along the containing
