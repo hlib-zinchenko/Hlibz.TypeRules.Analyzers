@@ -32,7 +32,8 @@ public sealed class InvalidConfigurationTests
                 + "(known options: match, max_accessibility, require_sealed, "
                 + "companion_interface, max_setter_accessibility, allow_init, "
                 + "readonly_collections, namespace_pattern, forbid_member_types, "
-                + "allow_self_references)"));
+                + "allow_self_references, require_immutable, equality, "
+                + "max_constructor_accessibility)"));
     }
 
     [Fact]
@@ -59,7 +60,8 @@ public sealed class InvalidConfigurationTests
                 "rule set 'endpoints' sets no constraint "
                 + "(expected max_accessibility, require_sealed, companion_interface, "
                 + "max_setter_accessibility, readonly_collections, namespace_pattern, "
-                + "forbid_member_types)"));
+                + "forbid_member_types, require_immutable, equality, "
+                + "max_constructor_accessibility)"));
     }
 
     [Fact]
@@ -69,6 +71,8 @@ public sealed class InvalidConfigurationTests
             typerules.endpoints.match = T:App.IEndpoint
             typerules.endpoints.max_accessibility = intern
             typerules.endpoints.require_sealed = yes
+            typerules.endpoints.equality = structural
+            typerules.endpoints.max_constructor_accessibility = privat
             """;
 
         await VerifyAnalyzerAsync(
@@ -79,7 +83,14 @@ public sealed class InvalidConfigurationTests
                 + "protected_internal, internal, protected, private_protected or private)"),
             Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
                 "rule set 'endpoints' has an invalid require_sealed 'yes' "
-                + "(expected true or false)"));
+                + "(expected true or false)"),
+            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+                "rule set 'endpoints' has an invalid equality 'structural' (expected value or "
+                + "identity)"),
+            Diagnostic(Descriptors.InvalidConfiguration).WithArguments(
+                "rule set 'endpoints' has an invalid max_constructor_accessibility 'privat' "
+                + "(expected public, protected_internal, internal, protected, private_protected "
+                + "or private)"));
     }
 
     [Fact]
@@ -186,7 +197,8 @@ public sealed class InvalidConfigurationTests
                 "rule set 'endpoints' sets no constraint "
                 + "(expected max_accessibility, require_sealed, companion_interface, "
                 + "max_setter_accessibility, readonly_collections, namespace_pattern, "
-                + "forbid_member_types)"));
+                + "forbid_member_types, require_immutable, equality, "
+                + "max_constructor_accessibility)"));
     }
 
     [Fact]

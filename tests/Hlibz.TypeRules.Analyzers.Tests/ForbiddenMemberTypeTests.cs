@@ -10,7 +10,7 @@ public sealed class ForbiddenMemberTypeTests
         """;
 
     [Fact]
-    public async Task Analyze_WithNavigationToAnotherAggregate_ReportsTR007()
+    public async Task Analyze_WithNavigationToAnotherAggregate_ReportsTR304()
     {
         const string source = """
             namespace App;

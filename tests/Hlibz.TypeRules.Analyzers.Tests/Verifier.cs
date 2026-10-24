@@ -26,6 +26,15 @@ internal static class Verifier
             public interface IAggregateRoot { }
 
             public interface IDto { }
+
+            public interface IValueObject { }
+
+            public abstract class ValueObject : IValueObject
+            {
+                public override bool Equals(object obj) => obj is ValueObject;
+
+                public override int GetHashCode() => 0;
+            }
         }
 
         namespace App.Contracts

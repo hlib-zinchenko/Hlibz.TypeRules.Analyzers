@@ -28,7 +28,7 @@ public sealed class WrongNamespaceTests
     }
 
     [Fact]
-    public async Task Analyze_WithTypeInOtherNamespace_ReportsTR006()
+    public async Task Analyze_WithTypeInOtherNamespace_ReportsTR103()
     {
         const string source = """
             namespace App.Users;
@@ -49,7 +49,7 @@ public sealed class WrongNamespaceTests
     }
 
     [Fact]
-    public async Task Analyze_WithTypeInGlobalNamespace_ReportsTR006()
+    public async Task Analyze_WithTypeInGlobalNamespace_ReportsTR103()
     {
         const string source = """
             internal sealed class {|#0:GetUserEndpoint|} : App.IEndpoint { }

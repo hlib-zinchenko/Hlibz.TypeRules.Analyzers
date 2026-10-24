@@ -16,7 +16,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace Hlibz.TypeRules.Analyzers.CodeFixes;
 
 /// <summary>
-/// TR003. When the companion interface doesn't exist, generates it and moves the matched
+/// TR104. When the companion interface doesn't exist, generates it and moves the matched
 /// interfaces from the type's base list onto it. When it exists but isn't implemented, adds it to
 /// the base list. No fix when a companion exists but doesn't extend a matched interface, or when a
 /// non-interface type already has the companion's name: what to do there is the author's call.

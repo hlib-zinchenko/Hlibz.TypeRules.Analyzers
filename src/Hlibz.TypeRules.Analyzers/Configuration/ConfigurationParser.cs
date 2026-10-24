@@ -24,6 +24,9 @@ internal static class ConfigurationParser
     public const string NamespacePatternOption = "namespace_pattern";
     public const string ForbidMemberTypesOption = "forbid_member_types";
     public const string AllowSelfReferencesOption = "allow_self_references";
+    public const string RequireImmutableOption = "require_immutable";
+    public const string EqualityOption = "equality";
+    public const string MaxConstructorAccessibilityOption = "max_constructor_accessibility";
 
     private static readonly string[] KnownOptions =
     [
@@ -37,6 +40,9 @@ internal static class ConfigurationParser
         NamespacePatternOption,
         ForbidMemberTypesOption,
         AllowSelfReferencesOption,
+        RequireImmutableOption,
+        EqualityOption,
+        MaxConstructorAccessibilityOption,
     ];
 
     /// <summary>Options that each add a check; a rule set needs at least one of them.</summary>
@@ -49,6 +55,9 @@ internal static class ConfigurationParser
         ReadOnlyCollectionsOption,
         NamespacePatternOption,
         ForbidMemberTypesOption,
+        RequireImmutableOption,
+        EqualityOption,
+        MaxConstructorAccessibilityOption,
     ];
 
     private static readonly char[] MatchSeparators = ['|', ','];
@@ -155,6 +164,10 @@ internal static class ConfigurationParser
         bool readOnlyCollections = ParseBoolean(name, ReadOnlyCollectionsOption, values, errors);
         ImmutableArray<NamespacePattern> namespacePatterns =
             ParseNamespacePatterns(name, values, errors);
+        bool requireImmutable = ParseBoolean(name, RequireImmutableOption, values, errors);
+        Equality? equality = ParseEquality(name, values, errors);
+        AccessScope? maxConstructorAccessibility =
+            ParseAccessibility(name, MaxConstructorAccessibilityOption, values, errors);
 
         if (values.ContainsKey(AllowInitOption)
             && !values.ContainsKey(MaxSetterAccessibilityOption))
@@ -232,7 +245,34 @@ internal static class ConfigurationParser
             readOnlyCollections,
             namespacePatterns,
             forbiddenMemberRuleSets,
-            allowSelfReferences);
+            allowSelfReferences,
+            requireImmutable,
+            equality,
+            maxConstructorAccessibility);
+    }
+
+    private static Equality? ParseEquality(
+        string ruleSetName,
+        Dictionary<string, string> values,
+        ImmutableArray<string>.Builder errors)
+    {
+        if (!values.TryGetValue(EqualityOption, out string? value))
+        {
+            return null;
+        }
+
+        switch (value.Trim().ToLowerInvariant())
+        {
+            case "value":
+                return Equality.Value;
+            case "identity":
+                return Equality.Identity;
+            default:
+                errors.Add(
+                    $"rule set '{ruleSetName}' has an invalid equality '{value}' (expected value "
+                    + "or identity)");
+                return null;
+        }
     }
 
     private static ImmutableArray<string> ParseForbiddenRuleSets(
