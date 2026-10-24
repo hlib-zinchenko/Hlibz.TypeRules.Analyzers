@@ -44,12 +44,19 @@ jobs:
       - name: Pack
         run: dotnet pack src/Hlibz.TypeRules.Analyzers.Package --no-build --configuration Release --output ./artifacts
 
-      - name: Package contains both analyzer assemblies
+      # Both analyzer assemblies, and the README and icon nuget.org shows: at the package root and
+      # referenced by the nuspec, since dropping PackageIcon or PackageReadmeFile still packs.
+      - name: Package contents
         run: |
           unzip -l ./artifacts/*.nupkg > contents.txt
           cat contents.txt
           grep -q "analyzers/dotnet/cs/Hlibz.TypeRules.Analyzers.dll" contents.txt
           grep -q "analyzers/dotnet/cs/Hlibz.TypeRules.Analyzers.CodeFixes.dll" contents.txt
+          grep -qE " README\.md$" contents.txt
+          grep -qE " icon\.png$" contents.txt
+          unzip -p ./artifacts/*.nupkg '*.nuspec' > package.nuspec
+          grep -q "<readme>README.md</readme>" package.nuspec
+          grep -q "<icon>icon.png</icon>" package.nuspec
 
       - uses: actions/upload-artifact@v4
         with:
