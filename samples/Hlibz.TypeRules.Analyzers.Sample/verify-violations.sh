@@ -2,7 +2,7 @@
 # Builds the sample with its violations compiled in and checks that TypeRules reports exactly the
 # diagnostics listed in Violations/expected-diagnostics.txt: nothing missing, nothing extra.
 #
-#   ./verify-violations.sh [Configuration]   (default: Release)
+#   ./verify-violations.sh [Configuration [MSBuild arguments...]]   (default: Release)
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -10,7 +10,7 @@ configuration="${1:-Release}"
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 
-if dotnet build --configuration "$configuration" -p:IncludeViolations=true >"$log" 2>&1; then
+if dotnet build --configuration "$configuration" -p:IncludeViolations=true "${@:2}" >"$log" 2>&1; then
     cat "$log"
     echo "error: the sample built with its violations included" >&2
     exit 1

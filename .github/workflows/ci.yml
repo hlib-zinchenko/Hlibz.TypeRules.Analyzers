@@ -50,3 +50,50 @@ jobs:
           cat contents.txt
           grep -q "analyzers/dotnet/cs/Hlibz.TypeRules.Analyzers.dll" contents.txt
           grep -q "analyzers/dotnet/cs/Hlibz.TypeRules.Analyzers.CodeFixes.dll" contents.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: ./artifacts/*.nupkg
+
+  # The analyzers compile against Roslyn 4.8, so the .NET 8 SDK is the oldest compiler that can
+  # load them. Runs the packed DLLs there, in the sample built for net8.0: it must build clean,
+  # and with its violations report exactly the expected diagnostics.
+  oldest-sdk:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        id: setup
+        with:
+          dotnet-version: 8.0.x
+
+      # The runner image also has newer SDKs, which dotnet would otherwise pick.
+      - name: Pin the .NET 8 SDK
+        run: |
+          dotnet new globaljson --sdk-version "${{ steps.setup.outputs.dotnet-version }}" --force
+          dotnet --version
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: ./artifacts
+
+      - name: Extract the analyzers
+        run: unzip -q ./artifacts/*.nupkg 'analyzers/*' -d ./package
+
+      - name: Sample builds clean
+        run: >
+          dotnet build samples/Hlibz.TypeRules.Analyzers.Sample
+          --configuration Release
+          -p:SampleTargetFramework=net8.0
+          -p:TypeRulesAnalyzerPath="$PWD/package/analyzers/dotnet/cs"
+
+      - name: Sample reports exactly the expected violations
+        run: >
+          samples/Hlibz.TypeRules.Analyzers.Sample/verify-violations.sh Release
+          -p:SampleTargetFramework=net8.0
+          -p:TypeRulesAnalyzerPath="$PWD/package/analyzers/dotnet/cs"

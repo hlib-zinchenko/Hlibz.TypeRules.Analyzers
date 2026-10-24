@@ -9,13 +9,13 @@ typerules.endpoints.namespace_pattern = **.Endpoints
 typerules.handlers.match = T:Sample.IRequestHandler`2
 typerules.handlers.max_accessibility = internal
 typerules.handlers.require_sealed = true
-typerules.handlers.companion_interface = true
+typerules.handlers.require_companion_interface = true
 typerules.handlers.namespace_pattern = **.Handlers
 
 typerules.entities.match = T:Sample.Entity`1
 typerules.entities.require_sealed = true
 typerules.entities.max_setter_accessibility = private
-typerules.entities.readonly_collections = true
+typerules.entities.require_readonly_collections = true
 typerules.entities.forbid_member_types = entities
 typerules.entities.equality = identity
 

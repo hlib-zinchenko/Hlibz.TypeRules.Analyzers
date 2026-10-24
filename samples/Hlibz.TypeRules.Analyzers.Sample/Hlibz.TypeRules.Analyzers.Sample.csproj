@@ -7,13 +7,24 @@
     must report exactly Violations/expected-diagnostics.txt: run verify-violations.sh (CI does).
   -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- Overridable because restore ignores a TargetFramework given on the command line. -->
+    <SampleTargetFramework Condition="'$(SampleTargetFramework)' == ''">net10.0</SampleTargetFramework>
+    <TargetFramework>$(SampleTargetFramework)</TargetFramework>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TypeRulesAnalyzerPath)' == ''">
     <ProjectReference Include="..\..\src\Hlibz.TypeRules.Analyzers\Hlibz.TypeRules.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!--
+    With TypeRulesAnalyzerPath (a folder of already built analyzer DLLs, such as the package's
+    analyzers/dotnet/cs), loads those instead of building the analyzer project. CI runs the packed
+    analyzers this way on the oldest supported SDK, with -p:SampleTargetFramework=net8.0.
+  -->
+  <ItemGroup Condition="'$(TypeRulesAnalyzerPath)' != ''">
+    <Analyzer Include="$(TypeRulesAnalyzerPath)/*.dll" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(IncludeViolations)' != 'true'">

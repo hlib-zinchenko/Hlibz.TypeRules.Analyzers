@@ -17,10 +17,10 @@ internal static class ConfigurationParser
     public const string MatchOption = "match";
     public const string MaxAccessibilityOption = "max_accessibility";
     public const string RequireSealedOption = "require_sealed";
-    public const string CompanionInterfaceOption = "companion_interface";
+    public const string RequireCompanionInterfaceOption = "require_companion_interface";
     public const string MaxSetterAccessibilityOption = "max_setter_accessibility";
     public const string AllowInitOption = "allow_init";
-    public const string ReadOnlyCollectionsOption = "readonly_collections";
+    public const string RequireReadOnlyCollectionsOption = "require_readonly_collections";
     public const string NamespacePatternOption = "namespace_pattern";
     public const string ForbidMemberTypesOption = "forbid_member_types";
     public const string AllowSelfReferencesOption = "allow_self_references";
@@ -34,10 +34,10 @@ internal static class ConfigurationParser
         MatchOption,
         MaxAccessibilityOption,
         RequireSealedOption,
-        CompanionInterfaceOption,
+        RequireCompanionInterfaceOption,
         MaxSetterAccessibilityOption,
         AllowInitOption,
-        ReadOnlyCollectionsOption,
+        RequireReadOnlyCollectionsOption,
         NamespacePatternOption,
         ForbidMemberTypesOption,
         AllowSelfReferencesOption,
@@ -52,9 +52,9 @@ internal static class ConfigurationParser
     [
         MaxAccessibilityOption,
         RequireSealedOption,
-        CompanionInterfaceOption,
+        RequireCompanionInterfaceOption,
         MaxSetterAccessibilityOption,
-        ReadOnlyCollectionsOption,
+        RequireReadOnlyCollectionsOption,
         NamespacePatternOption,
         ForbidMemberTypesOption,
         RequireImmutableOption,
@@ -181,7 +181,8 @@ internal static class ConfigurationParser
         AccessScope? maxSetterAccessibility =
             ParseAccessibility(name, MaxSetterAccessibilityOption, values, errors);
         bool allowInit = ParseBoolean(name, AllowInitOption, values, errors);
-        bool readOnlyCollections = ParseBoolean(name, ReadOnlyCollectionsOption, values, errors);
+        bool readOnlyCollections =
+            ParseBoolean(name, RequireReadOnlyCollectionsOption, values, errors);
         ImmutableArray<NamespacePattern> namespacePatterns =
             ParseNamespacePatterns(name, values, errors);
         bool requireImmutable = ParseBoolean(name, RequireImmutableOption, values, errors);
@@ -199,7 +200,7 @@ internal static class ConfigurationParser
 
         bool requireSealed = ParseBoolean(name, RequireSealedOption, values, errors);
         bool requireCompanionInterface =
-            ParseBoolean(name, CompanionInterfaceOption, values, errors);
+            ParseBoolean(name, RequireCompanionInterfaceOption, values, errors);
 
         ImmutableArray<string> forbiddenMemberRuleSets =
             ParseForbiddenRuleSets(name, values, configuredRuleSets, errors);
@@ -239,8 +240,8 @@ internal static class ConfigurationParser
                     {
                         string id = DocumentationCommentId.CreateDeclarationId(matchedType);
                         errors.Add(
-                            $"rule set '{name}' sets companion_interface, so every match type "
-                            + $"must be an interface, but '{id}' is not");
+                            $"rule set '{name}' sets require_companion_interface, so every match "
+                            + $"type must be an interface, but '{id}' is not");
                     }
                 }
             }

@@ -83,7 +83,7 @@ internal static class Descriptors
         description: "Non-abstract types that implement a rule set's matched interfaces must also "
             + "implement an interface named after them (Foo implements IFoo), declared next to "
             + "them, that itself extends a matched interface, when the rule set sets "
-            + "companion_interface = true. Consumers then depend on IFoo, which is what "
+            + "require_companion_interface = true. Consumers then depend on IFoo, which is what "
             + "reflection-based dependency injection registers.",
         helpLinkUri: HelpLink(CompanionInterfaceMissingId));
 
@@ -144,8 +144,9 @@ internal static class Descriptors
         description: "Properties and fields visible outside types that inherit from or implement "
             + "a rule set's matched types must not have a mutable collection type (arrays, "
             + "List<T>, IList<T>, ICollection<T>, dictionaries, sets, ...) when the rule set sets "
-            + "readonly_collections = true. Expose IReadOnlyList<T>, IReadOnlyCollection<T> or "
-            + "IReadOnlyDictionary<TKey, TValue> over a private collection instead.",
+            + "require_readonly_collections = true. Expose IReadOnlyList<T>, "
+            + "IReadOnlyCollection<T> or IReadOnlyDictionary<TKey, TValue> over a private "
+            + "collection instead.",
         helpLinkUri: HelpLink(MutableCollectionExposedId));
 
     public static readonly DiagnosticDescriptor TypeMustBeImmutable = new(

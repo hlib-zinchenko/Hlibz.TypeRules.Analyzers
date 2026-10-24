@@ -30,8 +30,8 @@ public sealed class InvalidConfigurationTests
             ConfigurationError(
                 "unknown option 'require_seald' in rule set 'endpoints' "
                 + "(known options: match, max_accessibility, require_sealed, "
-                + "companion_interface, max_setter_accessibility, allow_init, "
-                + "readonly_collections, namespace_pattern, forbid_member_types, "
+                + "require_companion_interface, max_setter_accessibility, allow_init, "
+                + "require_readonly_collections, namespace_pattern, forbid_member_types, "
                 + "allow_self_references, require_immutable, equality, "
                 + "max_constructor_accessibility, enabled)"));
     }
@@ -57,8 +57,8 @@ public sealed class InvalidConfigurationTests
             PublicUnsealedEndpoint,
             ConfigurationError(
                 "rule set 'endpoints' sets no constraint "
-                + "(expected max_accessibility, require_sealed, companion_interface, "
-                + "max_setter_accessibility, readonly_collections, namespace_pattern, "
+                + "(expected max_accessibility, require_sealed, require_companion_interface, "
+                + "max_setter_accessibility, require_readonly_collections, namespace_pattern, "
                 + "forbid_member_types, require_immutable, equality, "
                 + "max_constructor_accessibility)"));
     }
@@ -195,8 +195,8 @@ public sealed class InvalidConfigurationTests
             source,
             ConfigurationError(
                 "rule set 'endpoints' sets no constraint "
-                + "(expected max_accessibility, require_sealed, companion_interface, "
-                + "max_setter_accessibility, readonly_collections, namespace_pattern, "
+                + "(expected max_accessibility, require_sealed, require_companion_interface, "
+                + "max_setter_accessibility, require_readonly_collections, namespace_pattern, "
                 + "forbid_member_types, require_immutable, equality, "
                 + "max_constructor_accessibility)"));
     }
@@ -276,8 +276,8 @@ public sealed class InvalidConfigurationTests
             ConfigurationError(
                 "unknown option 'require_seald' in rule set 'endpoints' "
                 + "(known options: match, max_accessibility, require_sealed, "
-                + "companion_interface, max_setter_accessibility, allow_init, "
-                + "readonly_collections, namespace_pattern, forbid_member_types, "
+                + "require_companion_interface, max_setter_accessibility, allow_init, "
+                + "require_readonly_collections, namespace_pattern, forbid_member_types, "
                 + "allow_self_references, require_immutable, equality, "
                 + "max_constructor_accessibility, enabled)"));
     }

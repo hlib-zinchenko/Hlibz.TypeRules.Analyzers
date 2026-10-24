@@ -8,9 +8,10 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Hlibz.TypeRules.Analyzers;
 
 /// <summary>
-/// TR104. A type <c>Foo</c> matched by a rule set with <c>companion_interface = true</c> must
-/// implement an interface <c>IFoo</c> with the same generic arity, declared in the same namespace
-/// (or containing type), that itself extends one of the rule set's matched interfaces.
+/// TR104. A type <c>Foo</c> matched by a rule set with
+/// <c>require_companion_interface = true</c> must implement an interface <c>IFoo</c> with the same
+/// generic arity, declared in the same namespace (or containing type), that itself extends one of
+/// the rule set's matched interfaces.
 /// </summary>
 internal static class CompanionInterfaces
 {

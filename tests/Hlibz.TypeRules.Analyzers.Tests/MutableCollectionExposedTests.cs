@@ -8,7 +8,7 @@ public sealed class MutableCollectionExposedTests
 {
     private const string ReadOnlyCollections = """
         typerules.entities.match = T:App.Entity`1
-        typerules.entities.readonly_collections = true
+        typerules.entities.require_readonly_collections = true
         """;
 
     [Fact]

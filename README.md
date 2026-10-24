@@ -74,12 +74,12 @@ typerules.endpoints.namespace_pattern = **.Endpoints
 typerules.handlers.match = T:MyApp.Application.IRequestHandler`2
 typerules.handlers.max_accessibility = internal
 typerules.handlers.require_sealed = true
-typerules.handlers.companion_interface = true
+typerules.handlers.require_companion_interface = true
 
 # Entities: state changes only through their own methods, other entities referenced by id.
 typerules.entities.match = T:MyApp.Domain.Entity`1
 typerules.entities.max_setter_accessibility = private
-typerules.entities.readonly_collections = true
+typerules.entities.require_readonly_collections = true
 typerules.entities.forbid_member_types = entities
 
 # Value objects: immutable, compared by value, created through factory methods.
@@ -106,13 +106,13 @@ created and compared, TR3xx the state a type stores.
 | [TR101](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR101.md) | Type is more accessible than its rule set allows | `max_accessibility` | Change the access modifier |
 | [TR102](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR102.md) | Type must be sealed | `require_sealed` | Add `sealed` |
 | [TR103](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR103.md) | Type is declared in the wrong namespace | `namespace_pattern` | — (use the IDE's *Move to namespace*) |
-| [TR104](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR104.md) | Type must implement its companion interface (`Foo` → `IFoo`) | `companion_interface` | Generate `IFoo.cs`, or implement an existing `IFoo` |
+| [TR104](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR104.md) | Type must implement its companion interface (`Foo` → `IFoo`) | `require_companion_interface` | Generate `IFoo.cs`, or implement an existing `IFoo` |
 | **Construction and equality** | | | |
 | [TR201](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR201.md) | Constructor is more accessible than its rule set allows | `max_constructor_accessibility` | Change the access modifier |
 | [TR202](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR202.md) | Type has the wrong equality semantics: value objects compare by value, entities by identity | `equality` | — |
 | **State** | | | |
 | [TR301](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR301.md) | Setter is more accessible than its rule set allows | `max_setter_accessibility` | Restrict the accessor, e.g. `private set` |
-| [TR302](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR302.md) | Mutable collection (`List<T>`, arrays, ...) is exposed | `readonly_collections` | Expose `IReadOnlyList<T>` & co. |
+| [TR302](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR302.md) | Mutable collection (`List<T>`, arrays, ...) is exposed | `require_readonly_collections` | Expose `IReadOnlyList<T>` & co. |
 | [TR303](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR303.md) | Type must be immutable: readonly fields, no setters, no mutable collections, readonly structs | `require_immutable` | Add `readonly`, remove the setter or make it `init` |
 | [TR304](https://github.com/hlib-zinchenko/Hlibz.TypeRules.Analyzers/blob/main/docs/rules/TR304.md) | Type holds a reference to a forbidden type, e.g. one aggregate root holding another | `forbid_member_types` | — |
 
@@ -177,10 +177,10 @@ digits, `_` and `-`.
 | `match` | One or more types, separated by `\|` or `,` | The rule set applies to every class, struct and record that inherits from or implements any of them, directly or indirectly |
 | `max_accessibility` | `public`, `protected_internal`, `internal`, `protected`, `private_protected` or `private` | TR101: matched types can't be more accessible than this |
 | `require_sealed` | `true` or `false` | TR102: matched non-abstract classes must be sealed |
-| `companion_interface` | `true` or `false` | TR104: matched non-abstract types must implement an `I<TypeName>` interface, declared next to them, that extends a matched interface. Every `match` type must then be an interface |
+| `require_companion_interface` | `true` or `false` | TR104: matched non-abstract types must implement an `I<TypeName>` interface, declared next to them, that extends a matched interface. Every `match` type must then be an interface |
 | `max_setter_accessibility` | Same values as `max_accessibility` | TR301: `set` and `init` accessors of properties the matched types declare can't be more accessible than this |
 | `allow_init` | `true` or `false` | TR301: exempt `init` accessors. Only valid with `max_setter_accessibility` |
-| `readonly_collections` | `true` or `false` | TR302: properties and fields visible outside the matched types can't have a mutable collection type |
+| `require_readonly_collections` | `true` or `false` | TR302: properties and fields visible outside the matched types can't have a mutable collection type |
 | `namespace_pattern` | Dot-separated names; `*` is one segment, `**` any number; alternatives separated by `\|` or `,` | TR103: matched types must be declared in a namespace matching one alternative, e.g. `**.Database.Configurations` |
 | `forbid_member_types` | Rule-set names, separated by `\|` or `,`; may name the rule set itself | TR304: fields and auto-properties of matched types can't hold types of those rule sets, directly or in collections. A rule set named here needs only `match` |
 | `allow_self_references` | `true` (default) or `false` | TR304: whether a type may still hold its own type (`Category.Parent`). Only valid with `forbid_member_types` |
@@ -279,9 +279,18 @@ dotnet_code_quality.CA1710.additional_required_suffixes = T:MyApp.Api.IEndpoint-
 
 ## Versioning
 
-Rule IDs are permanent once released: never renumbered or reused. A rule may report more in a minor or patch
-release when it was missing cases. New rules only report once you configure them, so upgrading
-never adds diagnostics to a codebase that didn't opt in.
+From 1.0.0, rule IDs and configuration keys are public contract:
+
+- Rule IDs are never renumbered or reused.
+- Option names and their values are never renamed or removed outside a major release. An unknown
+  option is a TR000 error that drops its rule set, so a rename would break builds. New options
+  and values may be added.
+- A rule may report more in a minor or patch release when it was missing cases.
+- New rules only report once you configure them, so upgrading never adds diagnostics to a
+  codebase that didn't opt in.
+
+Previews (`1.0.0-preview.N`) may still change options, though never rule IDs; the release notes
+list any change.
 
 ## Contributing
 
@@ -298,9 +307,10 @@ violations it must report exactly the diagnostics in `Violations/expected-diagno
 samples/Hlibz.TypeRules.Analyzers.Sample/verify-violations.sh
 ```
 
-CI checks both. A new rule needs an entry in `AnalyzerReleases.Unshipped.md`, a test class, a page
-in `docs/rules/`, a row in the tables above, and a case in the sample's `Violations/` with its line
-in `expected-diagnostics.txt`.
+CI checks both, on the .NET 10 SDK and again on the .NET 8 SDK with the packed analyzers. A new
+rule needs an entry in `AnalyzerReleases.Unshipped.md`, a test class, a page in `docs/rules/`, a
+row in the tables above, and a case in the sample's `Violations/` with its line in
+`expected-diagnostics.txt`.
 
 ## License
 

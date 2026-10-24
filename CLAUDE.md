@@ -162,7 +162,11 @@ every rule that set configures (plus "fine" cases that must stay silent), and a
 `Violations/.editorconfig` with a misspelled type for TR000. `verify-violations.sh` compares the
 reported diagnostics, as `<ID> <first quoted name>`, with `Violations/expected-diagnostics.txt`
 and fails on anything missing or extra, and on any C# compile error in the violation files
-(the compiler doesn't run analyzers on code that doesn't compile). CI runs it.
+(the compiler doesn't run analyzers on code that doesn't compile). CI runs it, and runs it again
+in an `oldest-sdk` job on the .NET 8 SDK (the Roslyn 4.8 floor) with the packed DLLs:
+`-p:SampleTargetFramework=net8.0 -p:TypeRulesAnalyzerPath=<package>/analyzers/dotnet/cs`, extra
+arguments the script passes on to `dotnet build`. So the sample must also compile as C# 12 on
+net8.0.
 
 ## Adding a rule
 

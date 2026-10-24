@@ -11,7 +11,7 @@ public sealed class CompanionInterfaceMissingTests
 {
     private const string Handlers = """
         typerules.handlers.match = T:App.Contracts.IRequestHandler
-        typerules.handlers.companion_interface = true
+        typerules.handlers.require_companion_interface = true
         """;
 
     /// <summary>
@@ -530,7 +530,7 @@ public sealed class CompanionInterfaceMissingTests
     {
         const string configuration = """
             typerules.entities.match = T:App.Entity`1
-            typerules.entities.companion_interface = true
+            typerules.entities.require_companion_interface = true
             """;
         const string source = """
             namespace App;
@@ -542,7 +542,7 @@ public sealed class CompanionInterfaceMissingTests
             configuration,
             source,
             ConfigurationError(
-                "rule set 'entities' sets companion_interface, so every match type must be an "
-                + "interface, but 'T:App.Entity`1' is not"));
+                "rule set 'entities' sets require_companion_interface, so every match type must be "
+                + "an interface, but 'T:App.Entity`1' is not"));
     }
 }
