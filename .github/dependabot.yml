@@ -1,0 +1,28 @@
+# Weekly, grouped: one PR for all NuGet updates, one for all GitHub Actions.
+# CI runs the tests on every PR, so a green check is what makes these safe to merge.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      nuget:
+        patterns: ["*"]
+    # Roslyn 4.8 is the oldest compiler the analyzers run in (see Directory.Packages.props).
+    # Raising it drops older SDKs and IDEs, so it only moves by hand.
+    ignore:
+      - dependency-name: "Microsoft.CodeAnalysis.CSharp"
+      - dependency-name: "Microsoft.CodeAnalysis.CSharp.Workspaces"
+  # Actions run the NuGet release, so they get updated too.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
